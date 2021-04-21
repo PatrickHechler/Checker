@@ -65,6 +65,19 @@ public abstract class Checker implements Runnable {
 		throw new CheckerArraysEqualsExeption(a, b);
 	}
 	
+	public static void assertNotArrayEquals(Object[] a, char[] b) throws CheckerException {
+		if (a == null || b == null) {
+			if (a == null && b == null) {
+				throw new CheckerArraysEqualsExeption(a, b);
+			}
+			return;
+		}
+		for (int i = 0; i < b.length; i ++ ) {
+			if ( !a[i].equals(b[i])) return;
+		}
+		throw new CheckerArraysEqualsExeption(a, b);
+	}
+	
 	public static void assertNotArrayEquals(Object[] a, long[] b) throws CheckerException {
 		if (a == null || b == null) {
 			if (a == null && b == null) {
@@ -144,6 +157,19 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static void assertNotArrayEquals(boolean[] a, Object[] b) throws CheckerException {
+		if (a == null || b == null) {
+			if (a == null && b == null) {
+				throw new CheckerArraysEqualsExeption(a, b);
+			}
+			return;
+		}
+		for (int i = 0; i < b.length; i ++ ) {
+			if ( !b[i].equals(a[i])) return;
+		}
+		throw new CheckerArraysNotEqualsExeption(a, b);
+	}
+	
+	public static void assertNotArrayEquals(char[] a, Object[] b) throws CheckerException {
 		if (a == null || b == null) {
 			if (a == null && b == null) {
 				throw new CheckerArraysEqualsExeption(a, b);
@@ -240,6 +266,12 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertNotArrayEquals(char[] a, char[] b) throws CheckerException {
+		if (Arrays.equals(a, b)) {
+			throw new CheckerArraysEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertNotArrayEquals(long[] a, long[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
 			throw new CheckerArraysEqualsExeption(a, b);
@@ -284,6 +316,21 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static void assertArrayEquals(Object[] a, boolean[] b) throws CheckerException {
+		if (a == null || b == null) {
+			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
+			else return;
+		}
+		if (a.length != b.length) {
+			throw new CheckerArraysNotEqualsExeption(a, b);
+		}
+		for (int i = 0; i < b.length; i ++ ) {
+			if ( !a[i].equals(b[i])) {
+				throw new CheckerArraysNotEqualsExeption(a, b);
+			}
+		}
+	}
+	
+	public static void assertArrayEquals(Object[] a, char[] b) throws CheckerException {
 		if (a == null || b == null) {
 			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
 			else return;
@@ -403,6 +450,21 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertArrayEquals(char[] a, Object[] b) throws CheckerException {
+		if (a == null || b == null) {
+			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
+			else return;
+		}
+		if (a.length != b.length) {
+			throw new CheckerArraysNotEqualsExeption(a, b);
+		}
+		for (int i = 0; i < b.length; i ++ ) {
+			if ( !b[i].equals(a[i])) {
+				throw new CheckerArraysNotEqualsExeption(a, b);
+			}
+		}
+	}
+	
 	public static void assertArrayEquals(long[] a, Object[] b) throws CheckerException {
 		if (a == null || b == null) {
 			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
@@ -500,6 +562,12 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertArrayEquals(char[] a, char[] b) throws CheckerException {
+		if ( !Arrays.equals(a, b)) {
+			throw new CheckerArraysNotEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertArrayEquals(long[] a, long[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
 			throw new CheckerArraysNotEqualsExeption(a, b);
@@ -537,6 +605,12 @@ public abstract class Checker implements Runnable {
 	}
 	
 	
+	public static void assertSame(Object a, Object b) throws CheckerException {
+		if (a != b) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertSimpleEquals(Object a, Object b) throws CheckerException {
 		if ( !Objects.equals(a, b)) {
 			throw new CheckerNotEqualsExeption(a, b);
@@ -550,6 +624,12 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static void assertEquals(Object a, boolean b) throws CheckerException {
+		if ( !a.equals(b)) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+	
+	public static void assertEquals(Object a, char b) throws CheckerException {
 		if ( !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
@@ -597,6 +677,12 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertEquals(char a, Object b) throws CheckerException {
+		if ( !b.equals(a)) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertEquals(long a, Object b) throws CheckerException {
 		if ( !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
@@ -639,6 +725,12 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertEquals(char a, char b) throws CheckerException {
+		if (a != b) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertEquals(long a, long b) throws CheckerException {
 		if (a != b) {
 			throw new CheckerNotEqualsExeption(a, b);
@@ -676,6 +768,12 @@ public abstract class Checker implements Runnable {
 	}
 	
 	
+	public static void assertNotSame(Object a, Object b) throws CheckerException {
+		if (a == b) {
+			throw new CheckerEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertSimpleNotEquals(Object a, Object b) throws CheckerException {
 		if ( !Objects.equals(a, b)) {
 			throw new CheckerEqualsExeption(a, b);
@@ -689,6 +787,12 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static void assertNotEquals(Object a, boolean b) throws CheckerException {
+		if (a.equals(b)) {
+			throw new CheckerEqualsExeption(a, b);
+		}
+	}
+	
+	public static void assertNotEquals(Object a, char b) throws CheckerException {
 		if (a.equals(b)) {
 			throw new CheckerEqualsExeption(a, b);
 		}
@@ -736,6 +840,12 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertNotEquals(char a, Object b) throws CheckerException {
+		if (b.equals(a)) {
+			throw new CheckerEqualsExeption(a, b);
+		}
+	}
+	
 	public static void assertNotEquals(long a, Object b) throws CheckerException {
 		if (b.equals(a)) {
 			throw new CheckerEqualsExeption(a, b);
@@ -773,6 +883,12 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static void assertNotEquals(boolean a, boolean b) throws CheckerException {
+		if (a == b) {
+			throw new CheckerEqualsExeption(a, b);
+		}
+	}
+	
+	public static void assertNotEquals(char a, char b) throws CheckerException {
 		if (a == b) {
 			throw new CheckerEqualsExeption(a, b);
 		}
@@ -821,9 +937,82 @@ public abstract class Checker implements Runnable {
 		}
 	}
 	
+	public static void assertNull(byte a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	public static void assertNull(short a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	public static void assertNull(int a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	public static void assertNull(long a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	public static void assertNull(float a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	public static void assertNull(double a) throws CheckerException {
+		if (a != 0) {
+			throw new CheckerNotNullExeption(a, null);
+		}
+	}
+	
+	
 	public static void assertNotNull(Object a) throws CheckerException {
 		if (a == null) {
 			throw new CheckerNullExeption();
+		}
+	}
+	
+	public static void assertNotNull(byte a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("byte");
+		}
+	}
+	
+	public static void assertNotNull(short a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("short");
+		}
+	}
+	
+	public static void assertNotNull(int a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("int");
+		}
+	}
+	
+	public static void assertNotNull(long a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("long");
+		}
+	}
+	
+	public static void assertNotNull(float a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("float");
+		}
+	}
+	
+	public static void assertNotNull(double a) throws CheckerException {
+		if (a == 0) {
+			throw new CheckerNullExeption("double");
 		}
 	}
 	
@@ -1046,8 +1235,8 @@ public abstract class Checker implements Runnable {
 	
 	public static final class CheckResult {
 		
-		private Map <String, Method> methods = new HashMap <String, Method>();
-		private Map <Method, Object> results = new HashMap <Method, Object>();
+		private Map <String, Method>    methods = new HashMap <>();
+		private Map <Method, Throwable> results = new HashMap <>();
 		
 		
 		
@@ -1086,6 +1275,17 @@ public abstract class Checker implements Runnable {
 			return this.results.size();
 		}
 		
+		public Throwable getException(String methodName) throws NoSuchElementException {
+			Method m = methods.get(methodName);
+			if (m == null) throw new NoSuchElementException("missing method '" + methodName + "' in my methods: " + this.methods.keySet());
+			return results.get(m);
+		}
+		
+		public Throwable getException(Method m) throws NoSuchElementException {
+			if ( !results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
+			return results.get(m);
+		}
+		
 		public void print(final PrintStream out) {
 			StringBuilder str = new StringBuilder(System.lineSeparator());
 			IntInt cnt = new IntInt();
@@ -1093,7 +1293,14 @@ public abstract class Checker implements Runnable {
 				boolean b = (r == null);
 				cnt.a ++ ;
 				if (b) cnt.b ++ ;
-				str.append("   ").append(m.getName()).append(" -> ").append(b ? "good" : "bad").append(System.lineSeparator());
+				str.append("   ").append(m.getName()).append(" -> ");
+				if (b) {
+					str.append("good");
+				} else {
+					str.append("bad: ");
+					str.append(r);
+				}
+				str.append(System.lineSeparator());
 			});
 			str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
 			str.insert(0, " -> ");
