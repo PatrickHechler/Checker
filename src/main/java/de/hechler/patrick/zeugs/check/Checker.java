@@ -7,8 +7,8 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -24,6 +24,7 @@ import de.hechler.patrick.zeugs.check.exceptions.CheckerBoolException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerEqualsExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNoInstanceException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotEqualsExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNullExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotThrownException;
@@ -32,11 +33,15 @@ import de.hechler.patrick.zeugs.check.interfaces.ThrowingRunnable;
 
 public abstract class Checker implements Runnable {
 	
-	private List <Method> init;
-	private List <Method> start;
-	private List <Method> end;
-	private List <Method> finalize;
-	private List <Method> check;
+	static {
+		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
+	}
+	
+	private List <Method> init     = null;
+	private List <Method> start    = null;
+	private List <Method> end      = null;
+	private List <Method> finalize = null;
+	private List <Method> check    = null;
 	
 	private CheckResult result;
 	
@@ -1034,20 +1039,94 @@ public abstract class Checker implements Runnable {
 	}
 	
 	
+	public static void assertExactClass(Class <?> cls, Object o) throws CheckerException {
+		if (cls != o.getClass()) throw new CheckerNoInstanceException(cls, o, null);
+	}
 	
-	public static void assertThrowsAny(ThrowingRunnable <?> r) throws CheckerException {
+	public static void assertInstanceOf(Class <?> cls, Object o) throws CheckerException {
+		if ( !cls.isInstance(o)) throw new CheckerNoInstanceException(cls, o);
+	}
+	
+	public static void assertsSubClass(Class <?> cls, Class <?> subClas) throws CheckerException {
+		if ( !cls.isAssignableFrom(subClas)) throw new CheckerNoInstanceException(cls, subClas);
+	}
+	
+	
+	
+	public static void assertThrowsAny(String msg, ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
 		try {
 			r.run();
-			throw new CheckerNotThrownException();
+			thrown = new CheckerNotThrownException();
+			throw thrown;
+		} catch (Throwable err) {
+			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
+			else if ( !Objects.equals(msg, err.getMessage())) throw new CheckerNotThrownException(msg, err.getMessage(), err.getClass());
+		}
+	}
+	
+	public static <T extends Throwable> void assertThrows(String msg, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
+		try {
+			r.run();
+			thrown = new CheckerNotThrownException(assertThrown);
+			throw thrown;
+		} catch (Throwable err) {
+			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
+			Class <? extends Throwable> cls = err.getClass();
+			if (cls != assertThrown) {
+				if ( !assertThrown.isAssignableFrom(cls)) {
+					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
+				}
+			}
+			if ( !Objects.equals(msg, err.getMessage())) {
+				throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
+			}
+		}
+	}
+	
+	public static <T extends Throwable> void assertThrows(String msg, boolean exactClass, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
+		try {
+			r.run();
+			thrown = new CheckerNotThrownException(assertThrown);
+			throw thrown;
+		} catch (Throwable err) {
+			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
+			Class <? extends Throwable> cls = err.getClass();
+			if (cls != assertThrown) {
+				if (exactClass) {
+					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls, true);
+				}
+				if ( !assertThrown.isAssignableFrom(cls)) {
+					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls, false);
+				}
+			}
+			if ( !Objects.equals(msg, err.getMessage())) {
+				throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
+			}
+		}
+	}
+	
+	public static void assertThrowsAny(ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
+		try {
+			r.run();
+			thrown = new CheckerNotThrownException();
+			throw thrown;
 		} catch (Throwable ignore) {
+			if (thrown == ignore) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
 		}
 	}
 	
 	public static <T extends Throwable> void assertThrows(Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
 		try {
 			r.run();
-			throw new CheckerNotThrownException(assertThrown);
+			thrown = new CheckerNotThrownException(assertThrown);
+			throw thrown;
 		} catch (Throwable err) {
+			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
 			Class <? extends Throwable> cls = err.getClass();
 			if (cls != assertThrown) {
 				if ( !assertThrown.isAssignableFrom(cls)) {
@@ -1058,17 +1137,20 @@ public abstract class Checker implements Runnable {
 	}
 	
 	public static <T extends Throwable> void assertThrows(boolean exactClass, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
+		CheckerNotThrownException thrown = null;
 		try {
 			r.run();
-			throw new CheckerNotThrownException(assertThrown);
+			thrown = new CheckerNotThrownException(assertThrown);
+			throw thrown;
 		} catch (Throwable err) {
+			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
 			Class <? extends Throwable> cls = err.getClass();
 			if (cls != assertThrown) {
 				if (exactClass) {
-					throw new CheckerNotThrownException(assertThrown, cls, exactClass);
+					throw new CheckerNotThrownException(assertThrown, cls, true);
 				}
 				if ( !assertThrown.isAssignableFrom(cls)) {
-					throw new CheckerNotThrownException(assertThrown, cls, exactClass);
+					throw new CheckerNotThrownException(assertThrown, cls, false);
 				}
 			}
 		}
@@ -1120,6 +1202,11 @@ public abstract class Checker implements Runnable {
 	
 	
 	private void load(Class <?> clas) {
+		try {
+			clas.getClassLoader().setClassAssertionStatus(clas.getCanonicalName(), true);
+		} catch (Throwable e) {// sollte eigentlich nicht passieren
+			e.printStackTrace();
+		}
 		boolean needStatic = !Checker.class.isAssignableFrom(clas);
 		Method[] methods = clas.getDeclaredMethods();
 		this.init = new ArrayList <>();
@@ -1311,14 +1398,21 @@ public abstract class Checker implements Runnable {
 			out.print(str);
 		}
 		
-		public String printStr(String name, IntInt ii) {
+		private String printStr(String name, IntInt ii) {
 			StringBuilder str = new StringBuilder();
 			IntInt cnt = new IntInt();
 			this.results.forEach((m, r) -> {
 				boolean b = (r == null);
 				cnt.a ++ ;
 				if (b) cnt.b ++ ;
-				str.append("      ").append(m.getName()).append(" -> ").append(b ? "good" : "bad").append(System.lineSeparator());
+				str.append("   ").append(m.getName()).append(" -> ");
+				if (b) {
+					str.append("good");
+				} else {
+					str.append("bad: ");
+					str.append(r);
+				}
+				str.append(System.lineSeparator());
 			});
 			str.insert(0, System.lineSeparator());
 			str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
@@ -1354,7 +1448,7 @@ public abstract class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Collection <Class <?>> check) {
+	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Iterable <Class <?>> check) {
 		BigCheckerResult bcr = new BigCheckerResult();
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
@@ -1362,10 +1456,30 @@ public abstract class Checker implements Runnable {
 				if (cc == null) continue;
 				if (cc.disabled()) continue;
 			}
-			bcr.put(cls, check(cls));
+			
+			CheckResult cr = check(cls);
+			bcr.put(cls, cr);
 		}
 		return bcr;
 	}
+	
+	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> check) {
+		BigCheckerResult bcr = new BigCheckerResult();
+		while (check.hasNext()) {
+			Class <?> cls = check.next();
+			if (needEnabedCheckClass) {
+				CheckClass cc = cls.getAnnotation(CheckClass.class);
+				if (cc == null) continue;
+				if (cc.disabled()) continue;
+			}
+			
+			CheckResult cr = check(cls);
+			bcr.put(cls, cr);
+		}
+		return bcr;
+	}
+	
+	
 	
 	public final static class BigCheckerResult {
 		

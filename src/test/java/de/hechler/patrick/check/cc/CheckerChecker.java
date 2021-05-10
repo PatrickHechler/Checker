@@ -34,6 +34,7 @@ public class CheckerChecker extends Checker {
 	@Check(disabled = true)
 	public void check2() {
 		System.out.println("not called");
+		fail("this should not be called");
 	}
 	
 	@Check(disabled = false)
