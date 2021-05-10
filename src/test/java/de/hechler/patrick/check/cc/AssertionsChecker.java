@@ -27,6 +27,4 @@ public class AssertionsChecker extends Checker {
 		
 	}
 	
-	
-	
 }
