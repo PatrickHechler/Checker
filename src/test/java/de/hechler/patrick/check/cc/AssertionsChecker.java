@@ -9,7 +9,9 @@ public class AssertionsChecker extends Checker {
 	
 	@Check
 	public void ckeckAssert() {
-		Throwable err = new SubAssertionChecker().result().getException("badAssert");
+		CheckResult r = new SubAssertionChecker().result();
+		assertFalse(r.wentExpected("badAssert"));
+		Throwable err = r.getException("badAssert");
 		assertNotNull(err);
 		assertExactClass(AssertionError.class, err);
 		assertEquals("fail message", err.getMessage());

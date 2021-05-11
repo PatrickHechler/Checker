@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.function.BiConsumer;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
@@ -1161,6 +1162,10 @@ public abstract class Checker implements Runnable {
 		throw new CheckerFailException(msg);
 	}
 	
+	public static void fail() throws CheckerFailException {
+		throw new CheckerFailException("irgendetwas ist falsch");
+	}
+	
 	
 	
 	public CheckResult result() {
@@ -1352,7 +1357,7 @@ public abstract class Checker implements Runnable {
 		}
 		
 		public boolean wentExpected() {
-			for (Object o : this.results.values()) {
+			for (Throwable o : this.results.values()) {
 				if (o != null) return false;
 			}
 			return true;
@@ -1371,6 +1376,26 @@ public abstract class Checker implements Runnable {
 		public Throwable getException(Method m) throws NoSuchElementException {
 			if ( !results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
 			return results.get(m);
+		}
+		
+		public Map <Method, Throwable> allUnexpected() {
+			Map <Method, Throwable> ret = new HashMap <Method, Throwable>();
+			results.forEach((m, t) -> {
+				if (t != null) {
+					ret.put(m, t);
+				}
+			});
+			return ret;
+		}
+		
+		public void forAll(BiConsumer <Method, Throwable> c) {
+			results.forEach(c);
+		}
+		
+		public void forAllUnexpected(BiConsumer <Method, Throwable> c) {
+			results.forEach((m, t) -> {
+				if (t != null) c.accept(m, t);
+			});
 		}
 		
 		public void print(final PrintStream out) {
@@ -1435,8 +1460,8 @@ public abstract class Checker implements Runnable {
 	
 	
 	
-	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Class <?>... check) {
-		BigCheckerResult bcr = new BigCheckerResult();
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Class <?>... check) {
+		BigCheckResult bcr = new BigCheckResult();
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
@@ -1448,8 +1473,8 @@ public abstract class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Iterable <Class <?>> check) {
-		BigCheckerResult bcr = new BigCheckerResult();
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterable <Class <?>> check) {
+		BigCheckResult bcr = new BigCheckResult();
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
@@ -1463,8 +1488,8 @@ public abstract class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckerResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> check) {
-		BigCheckerResult bcr = new BigCheckerResult();
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> check) {
+		BigCheckResult bcr = new BigCheckResult();
 		while (check.hasNext()) {
 			Class <?> cls = check.next();
 			if (needEnabedCheckClass) {
@@ -1481,7 +1506,7 @@ public abstract class Checker implements Runnable {
 	
 	
 	
-	public final static class BigCheckerResult {
+	public final static class BigCheckResult {
 		
 		private Map <String, Class <?>>      classes = new HashMap <>();
 		private Map <Class <?>, CheckResult> results = new HashMap <>();
@@ -1498,6 +1523,51 @@ public abstract class Checker implements Runnable {
 		public CheckResult get(String fullClassName) {
 			Class <?> cls = classes.get(fullClassName);
 			return results.get(cls);
+		}
+		
+		public boolean wentExpected(Class <?> cls) {
+			return results.get(cls).wentExpected();
+		}
+		
+		public boolean wentExpected(String fullClassName) {
+			Class <?> cls = classes.get(fullClassName);
+			return results.get(cls).wentExpected();
+		}
+		
+		public Map <Class <?>, CheckResult> allUnexpected() {
+			Map <Class <?>, CheckResult> ret = new HashMap <Class <?>, Checker.CheckResult>();
+			results.forEach((c, r) -> {
+				if ( !r.wentExpected()) {
+					ret.put(c, r);
+				}
+			});
+			return ret;
+		}
+		
+		public void forAllCheckResults(BiConsumer <Class <?>, CheckResult> m) {
+			results.forEach(m);
+		}
+		
+		public void forAllUnexpectedCheckResults(BiConsumer <Class <?>, CheckResult> m) {
+			results.forEach((c, r) -> {
+				if ( !r.wentExpected()) {
+					m.accept(c, r);
+				}
+			});
+		}
+		
+		public void forAll(TriConsumer <Class <?>, Method, Throwable> tc) {
+			results.forEach((c, r) -> r.forAll((m, t) -> tc.accept(c, m, t)));
+		}
+		
+		public void forAllUnexpected(TriConsumer <Class <?>, Method, Throwable> tc) {
+			results.forEach((c, r) -> r.forAllUnexpected((m, t) -> tc.accept(c, m, t)));
+		}
+		
+		public static interface TriConsumer <A, B, C> {
+			
+			void accept(A a, B b, C c);
+			
 		}
 		
 		public Class <?> getClass(String fullClassName) {
