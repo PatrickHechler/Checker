@@ -3,6 +3,8 @@ package de.hechler.patrick.check;
 import de.hechler.patrick.check.cc.AssertionsChecker;
 import de.hechler.patrick.check.cc.CheckerChecker;
 import de.hechler.patrick.check.cc.CheckerCheckingChecker;
+import de.hechler.patrick.check.cc.PrivateAccesChecker;
+import de.hechler.patrick.check.cc.ResultParamChecker;
 import de.hechler.patrick.check.cc.NotCheckerChecker;
 import de.hechler.patrick.zeugs.check.Checker;
 import de.hechler.patrick.zeugs.check.Checker.BigCheckResult;
@@ -10,7 +12,7 @@ import de.hechler.patrick.zeugs.check.Checker.BigCheckResult;
 public class StartChecks {
 	
 	public static void main(String[] args) {
-		BigCheckResult res = Checker.checkAll(true, AssertionsChecker.class, CheckerChecker.class, CheckerCheckingChecker.class, NotCheckerChecker.class);
+		BigCheckResult res = Checker.checkAll(true, AssertionsChecker.class, CheckerChecker.class, CheckerCheckingChecker.class, NotCheckerChecker.class, PrivateAccesChecker.class, ResultParamChecker.class);
 		System.out.println();
 		System.out.flush();
 		synchronized (System.out) {
@@ -18,6 +20,7 @@ public class StartChecks {
 			System.err.flush();
 		}
 		System.out.println();
+		System.out.flush();
 		res.print();
 		System.out.println();
 		res.forAllUnexpected((c, m, t) -> {

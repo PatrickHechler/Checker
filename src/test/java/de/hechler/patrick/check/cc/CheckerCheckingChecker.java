@@ -125,15 +125,14 @@ public class CheckerCheckingChecker extends Checker {
 	}
 	
 	@Check
-	@SuppressWarnings("deprecation")
 	public void compileErrors() {
 		System.out.println("compileErrors start");
-		assertThrowsAny(() -> new SubWrongChecker().run());
+		new SubFormerWrongChecker().run();//former compile error
 		assertThrowsAny(() -> Checker.check(SubNotChecker.class));
 		System.out.println("              finish ce");
 	}
 	
-	public class SubWrongChecker extends Checker {@Check private void name(Object param) {} }
+	public class SubFormerWrongChecker extends Checker {@Check private void name(Object param) {} }
 	public class SubNotChecker {@Check private void name() {} }
 	
 }

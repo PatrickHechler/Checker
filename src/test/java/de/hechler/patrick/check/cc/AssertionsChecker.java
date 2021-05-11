@@ -11,10 +11,11 @@ public class AssertionsChecker extends Checker {
 	public void ckeckAssert() {
 		CheckResult r = new SubAssertionChecker().result();
 		assertFalse(r.wentExpected("badAssert"));
-		Throwable err = r.getException("badAssert");
+		Result err = r.getResult("badAssert");
 		assertNotNull(err);
-		assertExactClass(AssertionError.class, err);
-		assertEquals("fail message", err.getMessage());
+		assertTrue(err.badResult());
+		assertExactClass(AssertionError.class, err.getErr());
+		assertEquals("fail message", err.getErr().getMessage());
 		assertThrows("spezialized fail message", AssertionError.class, () -> {
 			assert false : "spezialized fail message";
 		});

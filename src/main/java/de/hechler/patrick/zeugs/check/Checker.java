@@ -1,6 +1,7 @@
 package de.hechler.patrick.zeugs.check;
 
 import java.io.PrintStream;
+import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -18,6 +19,7 @@ import java.util.function.BiConsumer;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.End;
+import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.Start;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysEqualsExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysNotEqualsExeption;
@@ -38,6 +40,7 @@ public abstract class Checker implements Runnable {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
 	}
 	
+	private final Object  instance;
 	private List <Method> init     = null;
 	private List <Method> start    = null;
 	private List <Method> end      = null;
@@ -46,9 +49,16 @@ public abstract class Checker implements Runnable {
 	
 	private CheckResult result;
 	
-	//@formatter:off
-	protected Checker() { }
-	//@formatter:on
+	
+	
+	protected Checker() {
+		instance = this;
+	}
+	
+	@Deprecated
+	protected Checker(Object instance) {
+		this.instance = instance;
+	}
 	
 	
 	
@@ -1173,34 +1183,72 @@ public abstract class Checker implements Runnable {
 		return result;
 	}
 	
-	
+	@Override
 	public final void run() {
-		if (this.init == null) load(this.getClass());
+		if (this.init == null) load(instance.getClass());
 		this.result = new CheckResult();
-		this.init.forEach(m -> run(m));
+		this.init.forEach(m -> run(m, instance));
 		this.check.forEach(m -> {
-			this.start.forEach(r -> run(r));
-			Throwable res = run(m);
+			this.start.forEach(r -> run(r, instance));
+			Result res = run(m, instance);
 			this.result.set(m, res);
-			this.end.forEach(r -> run(r));
+			this.end.forEach(r -> run(r, instance));
 		});
-		this.finalize.forEach(m -> run(m));
+		this.finalize.forEach(m -> run(m, instance));
 	}
 	
-	private Throwable run(Method m) {
+	private static Result run(final Method m, Object invoker) {
+		Parameter[] params = m.getParameters();
+		Object[] ps = new Object[params.length];
+		for (int i = 0; i < params.length; i ++ ) {
+			ParamCreater pc = params[i].getAnnotation(ParamCreater.class);
+			Class <?> type = params[i].getType();
+			if (pc != null) {
+				String[] method = pc.method();
+				Class <?>[] classes = new Class[method.length - 1];
+				for (int ii = 0; ii < classes.length; ii ++ ) {
+					try {
+						classes[ii] = Class.forName(method[ii + 1]);
+					} catch (ClassNotFoundException e) {
+						throw new InternalError("could not find class of Parameter ('" + method[ii + 1] + "'): " + e.getMessage(), e);
+					}
+				}
+				Method met;
+				try {
+					met = invoker.getClass().getDeclaredMethod(method[0], classes);
+				} catch (NoSuchMethodException | SecurityException e) {
+					throw new InternalError("could not get Method ('" + method[0] + "(" + Arrays.deepToString(method) + ")'): " + e.getMessage(), e);
+				}
+				met.trySetAccessible();
+				Result r = run(met, invoker);
+				if (r.err != null) {
+					throw new InternalError("could not get Parameter: " + r.err.getMessage(), r.err);
+				}
+				ps[i] = r.result;
+			} else if (type.isPrimitive()) {
+				if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
+				else if (type == Integer.TYPE) ps[i] = 0;
+				else if (type == Double.TYPE) ps[i] = 0.0d;
+				else if (type == Character.TYPE) ps[i] = '\0';
+				else if (type == Byte.TYPE) ps[i] = (Byte) (byte) 0;
+				else if (type == Long.TYPE) ps[i] = 0l;
+				else if (type == Float.TYPE) ps[i] = 0.0f;
+				else if (type == Short.TYPE) ps[i] = (Short) (short) 0;
+				else throw new InternalError("unknown primitiv param: '" + type + '\'');
+			} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type.getComponentType(), 0);
+			else ps[i] = null;
+		}
 		try {
-			m.invoke(this);
-			return null;
+			m.trySetAccessible();
+			Object res = m.invoke(invoker, ps);
+			return new Result(res);
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
-			if ( !Checker.class.isAssignableFrom(m.getDeclaringClass())) {
-				throw new AssertionError("can't check method: '" + m.getName() + "' of class '" + m.getDeclaringClass().getName() + "'", e);
-			}
-			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()), e);
+			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
 			Throwable err = e.getCause();
-			return err;
+			return new Result(err);
 		}
 	}
 	
@@ -1212,7 +1260,7 @@ public abstract class Checker implements Runnable {
 		} catch (Throwable e) {// sollte eigentlich nicht passieren
 			e.printStackTrace();
 		}
-		boolean needStatic = !Checker.class.isAssignableFrom(clas);
+		boolean needStatic = !instance.getClass().isAssignableFrom(clas);
 		Method[] methods = clas.getDeclaredMethods();
 		this.init = new ArrayList <>();
 		this.start = new ArrayList <>();
@@ -1222,9 +1270,6 @@ public abstract class Checker implements Runnable {
 		for (Method m : methods) {
 			Start s = m.getAnnotation(Start.class);
 			if (s != null) {
-				if (m.getParameterTypes().length != 0) {
-					throw new AssertionError("can't chack methods with parameters: " + m.getName());
-				}
 				if (needStatic) {
 					m.canAccess(null);
 				}
@@ -1236,9 +1281,6 @@ public abstract class Checker implements Runnable {
 			}
 			End e = m.getAnnotation(End.class);
 			if (e != null) {
-				if (m.getParameterTypes().length != 0) {
-					throw new AssertionError("can't chack methods with parameters: " + m.getName());
-				}
 				if (needStatic) {
 					m.canAccess(null);
 				}
@@ -1251,9 +1293,6 @@ public abstract class Checker implements Runnable {
 			Check c = m.getAnnotation(Check.class);
 			if (c != null) {
 				if ( !c.disabled()) {
-					if (m.getParameterTypes().length != 0) {
-						throw new AssertionError("can't chack methods with parameters: " + m.getName());
-					}
 					if (needStatic) {
 						m.canAccess(null);
 					}
@@ -1268,28 +1307,73 @@ public abstract class Checker implements Runnable {
 	/**
 	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
 	 * 
-	 * if {@code clas} is no {@link Checker} all {@link Check}, {@link Start} and {@link End} methods (if enabled) have to be {@code static}.<br>
-	 * if {@code clas} is a {@link Check}, but has no reachable {@link Constructor} without {@link Parameter}, it will be handled like a non {@link Check} {@link Class}<br>
-	 * 
-	 * this method will use the generated {@link Check} to generate a {@link CheckResult}.
+	 * this method will generated a {@link Checker} to generate a {@link CheckResult}.
 	 * 
 	 * @param clas
 	 *            the {@link Class} to be checked
 	 * @return the result of the created {@link Checker}
-	 * @implNote it behaves exactly like <code>{@link #generateChecker(Class)}.{@link #result()}</code>
-	 * @deprecated you should make {@code clas} assignable from {@link Checker} and than use the {@link #result} method
+	 * @implNote it behaves like <code>{@link #generateChecker(Class)}.{@link #result()}</code>
 	 */
-	@Deprecated
 	public static CheckResult check(final Class <?> clas) {
-		if (Checker.class.isAssignableFrom(clas)) {
-			try {
-				@SuppressWarnings("unchecked")
-				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
-				Constructor <? extends Checker> c = cls.getConstructor();
-				Checker instance = c.newInstance();
-				return instance.result();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+		try {
+			Class <?> cls = clas;
+			Start s;
+			boolean noStart = true;
+			Constructor <?>[] cs = cls.getConstructors();
+			for (Constructor <?> c : cs) {
+				s = c.getAnnotation(Start.class);
+				if (s == null) continue;
+				if (s.disabled()) continue;
+				noStart = false;
+				Parameter[] params = c.getParameters();
+				Object[] ps = new Object[params.length];
+				for (int i = 0; i < params.length; i ++ ) {
+					ParamCreater pc = params[i].getAnnotation(ParamCreater.class);
+					Class <?> type = params[i].getType();
+					if (pc != null) {
+						String[] method = pc.method();
+						Class <?>[] classes = new Class[method.length - 1];
+						for (int ii = 0; ii < classes.length; ii ++ ) {
+							classes[ii] = Class.forName(method[ii + 1]);
+						}
+						Method met = clas.getDeclaredMethod(method[0], classes);
+						met.trySetAccessible();
+						Result r = run(met, null);
+						if (r.err != null) {
+							CheckResult cr = new CheckResult();
+							cr.set(met, r);
+							return cr;
+						}
+						ps[i] = r.result;
+					} else if (type.isPrimitive()) {
+						if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
+						else if (type == Integer.TYPE) ps[i] = 0;
+						else if (type == Double.TYPE) ps[i] = 0.0d;
+						else if (type == Character.TYPE) ps[i] = '\0';
+						else if (type == Byte.TYPE) ps[i] = (Byte) (byte) 0;
+						else if (type == Long.TYPE) ps[i] = 0l;
+						else if (type == Float.TYPE) ps[i] = 0.0f;
+						else if (type == Short.TYPE) ps[i] = (Short) (short) 0;
+						else throw new InternalError("unknown primitiv param: '" + type + '\'');
+					} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type, 0);
+					else ps[i] = null;
+				}
+				Object instance = c.newInstance(ps);
+				if (instance instanceof Checker) return ((Checker) instance).result();
+				else return new Checker(instance) {
+				}.result();
 			}
+			Constructor <?> c = cls.getConstructor();
+			s = c.getAnnotation(Start.class);
+			if ( (s == null && noStart) && (s == null || !s.disabled())) {
+				if (c.trySetAccessible()) {
+					Object instance = c.newInstance();
+					if (instance instanceof Checker) return ((Checker) instance).result();
+					else return new Checker(instance) {
+					}.result();
+				}
+			}
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
 		}
 		Checker c = new Checker() {
 		};
@@ -1300,15 +1384,10 @@ public abstract class Checker implements Runnable {
 	/**
 	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
 	 * 
-	 * if {@code clas} is no {@link Checker} all {@link Check}, {@link Start} and {@link End} methods (if enabled) have to be {@code static}.<br>
-	 * if {@code clas} is a {@link Check}, but has no reachable {@link Constructor} without {@link Parameter}, it will be handled like a non {@link Check} {@link Class}<br>
-	 * 
 	 * @param clas
 	 *            the {@link Class} to be checked
 	 * @return the result of the created {@link Checker}
-	 * @deprecated you should make {@code clas} assignable from {@link Checker} and than use a {@link Constructor}
 	 */
-	@Deprecated
 	public static Checker generateChecker(final Class <?> clas) {
 		if (Checker.class.isAssignableFrom(clas)) {
 			try {
@@ -1325,14 +1404,52 @@ public abstract class Checker implements Runnable {
 		return c;
 	}
 	
+	public static final class Result {
+		
+		private final Object    result;
+		private final Throwable err;
+		
+		
+		public Result(Object e) {
+			result = e;
+			err = null;
+		}
+		
+		public Result(Throwable t) {
+			result = null;
+			err = t;
+		}
+		
+		
+		
+		public boolean goodResult() {
+			return err == null;
+		}
+		
+		public boolean badResult() {
+			return err != null;
+		}
+		
+		public Object getResult() throws NoSuchElementException {
+			if (err != null) throw new NoSuchElementException("this is no good result!");
+			else return result;
+		}
+		
+		public Throwable getErr() throws NoSuchElementException {
+			if (err == null) throw new NoSuchElementException("this is no bad result!");
+			else return err;
+		}
+		
+	}
+	
 	public static final class CheckResult {
 		
-		private Map <String, Method>    methods = new HashMap <>();
-		private Map <Method, Throwable> results = new HashMap <>();
+		private Map <String, Method> methods = new HashMap <>();
+		private Map <Method, Result> results = new HashMap <>();
 		
 		
 		
-		private void set(Method m, Throwable value) {
+		private void set(Method m, Result value) {
 			this.methods.put(m.getName(), m);
 			this.results.put(m, value);
 		}
@@ -1348,17 +1465,17 @@ public abstract class Checker implements Runnable {
 		public boolean wentExpected(String mname) throws NoSuchElementException {
 			Method m = this.methods.get(mname);
 			if (m == null) throw new NoSuchElementException("missing method '" + mname + "' in my methods: " + this.methods.keySet());
-			return this.results.get(m) == null;
+			return this.results.get(m).goodResult();
 		}
 		
 		public boolean wentExpected(Method m) throws NoSuchElementException {
 			if ( !this.results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
-			return this.results.get(m) != null;
+			return this.results.get(m).goodResult();
 		}
 		
 		public boolean wentExpected() {
-			for (Throwable o : this.results.values()) {
-				if (o != null) return false;
+			for (Result r : this.results.values()) {
+				if (r.badResult()) return false;
 			}
 			return true;
 		}
@@ -1367,34 +1484,34 @@ public abstract class Checker implements Runnable {
 			return this.results.size();
 		}
 		
-		public Throwable getException(String methodName) throws NoSuchElementException {
+		public Result getResult(String methodName) throws NoSuchElementException {
 			Method m = methods.get(methodName);
 			if (m == null) throw new NoSuchElementException("missing method '" + methodName + "' in my methods: " + this.methods.keySet());
 			return results.get(m);
 		}
 		
-		public Throwable getException(Method m) throws NoSuchElementException {
+		public Result getResult(Method m) throws NoSuchElementException {
 			if ( !results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
 			return results.get(m);
 		}
 		
 		public Map <Method, Throwable> allUnexpected() {
 			Map <Method, Throwable> ret = new HashMap <Method, Throwable>();
-			results.forEach((m, t) -> {
-				if (t != null) {
-					ret.put(m, t);
+			results.forEach((m, r) -> {
+				if (r.badResult()) {
+					ret.put(m, r.err);
 				}
 			});
 			return ret;
 		}
 		
-		public void forAll(BiConsumer <Method, Throwable> c) {
+		public void forAll(BiConsumer <Method, Result> c) {
 			results.forEach(c);
 		}
 		
 		public void forAllUnexpected(BiConsumer <Method, Throwable> c) {
 			results.forEach((m, t) -> {
-				if (t != null) c.accept(m, t);
+				if (t.err != null) c.accept(m, t.err);
 			});
 		}
 		
@@ -1406,7 +1523,7 @@ public abstract class Checker implements Runnable {
 			StringBuilder str = new StringBuilder(System.lineSeparator());
 			IntInt cnt = new IntInt();
 			this.results.forEach((m, r) -> {
-				boolean b = (r == null);
+				boolean b = (r.goodResult());
 				cnt.a ++ ;
 				if (b) cnt.b ++ ;
 				str.append("   ").append(m.getName()).append(" -> ");
@@ -1431,7 +1548,7 @@ public abstract class Checker implements Runnable {
 			StringBuilder str = new StringBuilder();
 			IntInt cnt = new IntInt();
 			this.results.forEach((m, r) -> {
-				boolean b = (r == null);
+				boolean b = (r.goodResult());
 				cnt.a ++ ;
 				if (b) cnt.b ++ ;
 				str.append("   ").append(m.getName()).append(" -> ");
@@ -1560,7 +1677,7 @@ public abstract class Checker implements Runnable {
 			});
 		}
 		
-		public void forAll(TriConsumer <Class <?>, Method, Throwable> tc) {
+		public void forAll(TriConsumer <Class <?>, Method, Result> tc) {
 			results.forEach((c, r) -> r.forAll((m, t) -> tc.accept(c, m, t)));
 		}
 		
@@ -1581,6 +1698,7 @@ public abstract class Checker implements Runnable {
 		public void print() {
 			print(System.out);
 		}
+		
 		public void print(PrintStream out) {
 			List <String> prints = new ArrayList <>();
 			IntInt ii = new IntInt();
