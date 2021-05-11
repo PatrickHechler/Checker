@@ -40,7 +40,8 @@ public abstract class Checker implements Runnable {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
 	}
 	
-	private final Object  instance;
+	private final Object instance;
+	
 	private List <Method> init     = null;
 	private List <Method> start    = null;
 	private List <Method> end      = null;
@@ -1245,7 +1246,8 @@ public abstract class Checker implements Runnable {
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
-			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
+			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {" + Arrays.deepToString(ps) + '}',
+					e);
 		} catch (InvocationTargetException e) {
 			Throwable err = e.getCause();
 			return new Result(err);
@@ -1366,12 +1368,12 @@ public abstract class Checker implements Runnable {
 			Constructor <?> c = cls.getConstructor();
 			s = c.getAnnotation(Start.class);
 			if ( (s == null && noStart) && (s == null || !s.disabled())) {
-				if (c.trySetAccessible()) {
-					Object instance = c.newInstance();
-					if (instance instanceof Checker) return ((Checker) instance).result();
-					else return new Checker(instance) {
-					}.result();
-				}
+				c.trySetAccessible();
+				c.canAccess(null);
+				Object instance = c.newInstance();
+				if (instance instanceof Checker) return ((Checker) instance).result();
+				else return new Checker(instance) {
+				}.result();
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
 		}
@@ -1580,6 +1582,98 @@ public abstract class Checker implements Runnable {
 	//@formatter:on
 	
 	
+	
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String... fullClassNames) {
+		BigCheckResult bcr = new BigCheckResult();
+		for (String fcn : fullClassNames) {
+			try {
+				Class <?> cls;
+				cls = Class.forName(fcn, true, classLoader);
+				if (needEnabedCheckClass) {
+					CheckClass cc = cls.getAnnotation(CheckClass.class);
+					if (cc == null) continue;
+					if (cc.disabled()) continue;
+				}
+				bcr.put(cls, check(cls));
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return bcr;
+	}
+	
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String[] fullClassNames, Class <?>... check) {
+		BigCheckResult bcr = new BigCheckResult();
+		for (String fcn : fullClassNames) {
+			try {
+				Class <?> cls;
+				cls = Class.forName(fcn, true, classLoader);
+				if (needEnabedCheckClass) {
+					CheckClass cc = cls.getAnnotation(CheckClass.class);
+					if (cc == null) continue;
+					if (cc.disabled()) continue;
+				}
+				bcr.put(cls, check(cls));
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		for (Class <?> cls : check) {
+			if (needEnabedCheckClass) {
+				CheckClass cc = cls.getAnnotation(CheckClass.class);
+				if (cc == null) continue;
+				if (cc.disabled()) continue;
+			}
+			bcr.put(cls, check(cls));
+		}
+		return bcr;
+	}
+	
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, String... fullClassNames) {
+		BigCheckResult bcr = new BigCheckResult();
+		for (String fcn : fullClassNames) {
+			try {
+				Class <?> cls;
+				cls = Class.forName(fcn);
+				if (needEnabedCheckClass) {
+					CheckClass cc = cls.getAnnotation(CheckClass.class);
+					if (cc == null) continue;
+					if (cc.disabled()) continue;
+				}
+				bcr.put(cls, check(cls));
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		return bcr;
+	}
+	
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, String[] fullClassNames, Class <?>... check) {
+		BigCheckResult bcr = new BigCheckResult();
+		for (String fcn : fullClassNames) {
+			try {
+				Class <?> cls;
+				cls = Class.forName(fcn);
+				if (needEnabedCheckClass) {
+					CheckClass cc = cls.getAnnotation(CheckClass.class);
+					if (cc == null) continue;
+					if (cc.disabled()) continue;
+				}
+				bcr.put(cls, check(cls));
+			} catch (ClassNotFoundException e) {
+				e.printStackTrace();
+			}
+		}
+		for (Class <?> cls : check) {
+			if (needEnabedCheckClass) {
+				CheckClass cc = cls.getAnnotation(CheckClass.class);
+				if (cc == null) continue;
+				if (cc.disabled()) continue;
+			}
+			bcr.put(cls, check(cls));
+		}
+		return bcr;
+	}
 	
 	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Class <?>... check) {
 		BigCheckResult bcr = new BigCheckResult();
