@@ -18,12 +18,12 @@ public class StartChecks {
 			System.err.flush();
 		}
 		System.out.println();
-		res.print(System.out);
+		res.print();
 		System.out.println();
-		res.allUnexpected().forEach((c, r) -> r.allUnexpected().forEach((m, t) -> {
-			System.err.println(m.getName() + "()");
+		res.forAllUnexpected((c, m, t) -> {
+			System.err.println(c.getName() + '.' + m.getName() + "()");
 			t.printStackTrace();
-		}));
+		});
 	}
 	
 }

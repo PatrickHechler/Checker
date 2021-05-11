@@ -1398,6 +1398,10 @@ public abstract class Checker implements Runnable {
 			});
 		}
 		
+		public void print() {
+			print(System.out);
+		}
+		
 		public void print(final PrintStream out) {
 			StringBuilder str = new StringBuilder(System.lineSeparator());
 			IntInt cnt = new IntInt();
@@ -1574,6 +1578,9 @@ public abstract class Checker implements Runnable {
 			return classes.get(fullClassName);
 		}
 		
+		public void print() {
+			print(System.out);
+		}
 		public void print(PrintStream out) {
 			List <String> prints = new ArrayList <>();
 			IntInt ii = new IntInt();
