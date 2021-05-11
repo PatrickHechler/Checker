@@ -34,7 +34,7 @@ import de.hechler.patrick.zeugs.check.exceptions.CheckerNotThrownException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNullExeption;
 import de.hechler.patrick.zeugs.check.interfaces.ThrowingRunnable;
 
-public abstract class Checker implements Runnable {
+public class Checker implements Runnable {
 	
 	static {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
@@ -52,12 +52,24 @@ public abstract class Checker implements Runnable {
 	
 	
 	
-	protected Checker() {
+	/**
+	 * creates a new {@link Checker}.<br>
+	 * this {@link Checker} will use itself to call methods: {@link Method#invoke(Object, Object...) method.invoke(this, params);}
+	 */
+	public Checker() {
 		instance = this;
 	}
 	
-	@Deprecated
-	protected Checker(Object instance) {
+	/**
+	 * creates a {@link Checker} with the specified <code>instance</code>.<br>
+	 * This {@code instance} will be used to call methods.<br>
+	 * 
+	 * @param instance
+	 *            the {@code instance} used by this {@link Checker}
+	 * 			
+	 * @see {@link Method#invoke(Object, Object...) method.invoke(instance, params);}
+	 */
+	public Checker(Object instance) {
 		this.instance = instance;
 	}
 	
@@ -1262,7 +1274,6 @@ public abstract class Checker implements Runnable {
 		} catch (Throwable e) {// sollte eigentlich nicht passieren
 			e.printStackTrace();
 		}
-		boolean needStatic = !instance.getClass().isAssignableFrom(clas);
 		Method[] methods = clas.getDeclaredMethods();
 		this.init = new ArrayList <>();
 		this.start = new ArrayList <>();
@@ -1271,10 +1282,7 @@ public abstract class Checker implements Runnable {
 		this.check = new ArrayList <>();
 		for (Method m : methods) {
 			Start s = m.getAnnotation(Start.class);
-			if (s != null) {
-				if (needStatic) {
-					m.canAccess(null);
-				}
+			if (s != null && !s.disabled()) {
 				if (s.onlyOnce()) {
 					this.init.add(m);
 				} else {
@@ -1282,10 +1290,7 @@ public abstract class Checker implements Runnable {
 				}
 			}
 			End e = m.getAnnotation(End.class);
-			if (e != null) {
-				if (needStatic) {
-					m.canAccess(null);
-				}
+			if (e != null && !e.disabled()) {
 				if (e.onlyOnce()) {
 					this.finalize.add(m);
 				} else {
@@ -1293,11 +1298,8 @@ public abstract class Checker implements Runnable {
 				}
 			}
 			Check c = m.getAnnotation(Check.class);
-			if (c != null) {
+			if (c != null && !c.disabled()) {
 				if ( !c.disabled()) {
-					if (needStatic) {
-						m.canAccess(null);
-					}
 					this.check.add(m);
 				}
 			}
@@ -1789,10 +1791,21 @@ public abstract class Checker implements Runnable {
 			return classes.get(fullClassName);
 		}
 		
+		/**
+		 * prints this {@link BigCheckResult} to the {@link PrintStream} {@link System#out}
+		 * 
+		 * @see {@link #print(PrintStream) print(System.out)}
+		 */
 		public void print() {
 			print(System.out);
 		}
 		
+		/**
+		 * prints this {@link BigCheckResult} to the {@link PrintStream}
+		 * 
+		 * @param out
+		 *            the {@link PrintStream} to be used to display this {@link BigCheckResult}
+		 */
 		public void print(PrintStream out) {
 			List <String> prints = new ArrayList <>();
 			IntInt ii = new IntInt();
