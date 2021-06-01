@@ -3,11 +3,11 @@ package de.hechler.patrick.check;
 import de.hechler.patrick.check.cc.AssertionsChecker;
 import de.hechler.patrick.check.cc.CheckerChecker;
 import de.hechler.patrick.check.cc.CheckerCheckingChecker;
+import de.hechler.patrick.check.cc.NotCheckerChecker;
 import de.hechler.patrick.check.cc.PrivateAccesChecker;
 import de.hechler.patrick.check.cc.ResultParamChecker;
-import de.hechler.patrick.check.cc.NotCheckerChecker;
+import de.hechler.patrick.zeugs.check.BigCheckResult;
 import de.hechler.patrick.zeugs.check.Checker;
-import de.hechler.patrick.zeugs.check.Checker.BigCheckResult;
 
 public class StartChecks {
 	

@@ -1,6 +1,5 @@
 package de.hechler.patrick.zeugs.check;
 
-import java.io.PrintStream;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -8,13 +7,9 @@ import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.function.BiConsumer;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
@@ -1232,12 +1227,14 @@ public class Checker implements Runnable {
 				} catch (NoSuchMethodException | SecurityException e) {
 					throw new InternalError("could not get Method ('" + method[0] + "(" + Arrays.deepToString(method) + ")'): " + e.getMessage(), e);
 				}
-				met.trySetAccessible();
+				boolean flag = met.isAccessible();
+				met.setAccessible(true);
 				Result r = run(met, invoker);
-				if (r.err != null) {
-					throw new InternalError("could not get Parameter: " + r.err.getMessage(), r.err);
+				if (r.badResult()) {
+					throw new InternalError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 				}
-				ps[i] = r.result;
+				met.setAccessible(flag);
+				ps[i] = r.getResult();
 			} else if (type.isPrimitive()) {
 				if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
 				else if (type == Integer.TYPE) ps[i] = 0;
@@ -1252,14 +1249,16 @@ public class Checker implements Runnable {
 			else ps[i] = null;
 		}
 		try {
-			m.trySetAccessible();
+			boolean flag = m.isAccessible();
+			m.setAccessible(true);
 			Object res = m.invoke(invoker, ps);
+			m.setAccessible(flag);
 			return new Result(res);
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
-			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {" + Arrays.deepToString(ps) + '}',
-					e);
+			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {"
+				+ Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
 			Throwable err = e.getCause();
 			return new Result(err);
@@ -1341,14 +1340,16 @@ public class Checker implements Runnable {
 							classes[ii] = Class.forName(method[ii + 1]);
 						}
 						Method met = clas.getDeclaredMethod(method[0], classes);
-						met.trySetAccessible();
+						boolean flag = met.isAccessible();
+						met.setAccessible(true);
 						Result r = run(met, null);
-						if (r.err != null) {
+						met.setAccessible(flag);
+						if (r.badResult()) {
 							CheckResult cr = new CheckResult();
 							cr.set(met, r);
 							return cr;
 						}
-						ps[i] = r.result;
+						ps[i] = r.getResult();
 					} else if (type.isPrimitive()) {
 						if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
 						else if (type == Integer.TYPE) ps[i] = 0;
@@ -1364,23 +1365,25 @@ public class Checker implements Runnable {
 				}
 				Object instance = c.newInstance(ps);
 				if (instance instanceof Checker) return ((Checker) instance).result();
-				else return new Checker(instance) {
-				}.result();
+				else return new Checker(instance).result();
 			}
 			Constructor <?> c = cls.getConstructor();
 			s = c.getAnnotation(Start.class);
 			if ( (s == null && noStart) && (s == null || !s.disabled())) {
-				c.trySetAccessible();
-				c.canAccess(null);
+				boolean flag = c.isAccessible();
+				c.setAccessible(true);
+				// c.canAccess(null);
 				Object instance = c.newInstance();
-				if (instance instanceof Checker) return ((Checker) instance).result();
-				else return new Checker(instance) {
-				}.result();
+				c.setAccessible(flag);
+				if (instance instanceof Checker) {
+					return ((Checker) instance).result();
+				} else {
+					return new Checker(instance).result();
+				}
 			}
-		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException e) {
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException ignore) {
 		}
-		Checker c = new Checker() {
-		};
+		Checker c = new Checker();
 		c.load(clas);
 		return c.result();
 	}
@@ -1399,191 +1402,13 @@ public class Checker implements Runnable {
 				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
 				Constructor <? extends Checker> c = cls.getConstructor();
 				return c.newInstance();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException e) {
+			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
 			}
 		}
-		Checker c = new Checker() {
-		};
+		Checker c = new Checker();
 		c.load(clas);
 		return c;
 	}
-	
-	public static final class Result {
-		
-		private final Object    result;
-		private final Throwable err;
-		
-		
-		public Result(Object e) {
-			result = e;
-			err = null;
-		}
-		
-		public Result(Throwable t) {
-			result = null;
-			err = t;
-		}
-		
-		
-		
-		public boolean goodResult() {
-			return err == null;
-		}
-		
-		public boolean badResult() {
-			return err != null;
-		}
-		
-		public Object getResult() throws NoSuchElementException {
-			if (err != null) throw new NoSuchElementException("this is no good result!");
-			else return result;
-		}
-		
-		public Throwable getErr() throws NoSuchElementException {
-			if (err == null) throw new NoSuchElementException("this is no bad result!");
-			else return err;
-		}
-		
-	}
-	
-	public static final class CheckResult {
-		
-		private Map <String, Method> methods = new HashMap <>();
-		private Map <Method, Result> results = new HashMap <>();
-		
-		
-		
-		private void set(Method m, Result value) {
-			this.methods.put(m.getName(), m);
-			this.results.put(m, value);
-		}
-		
-		public boolean checked(String mname) {
-			return this.methods.containsKey(mname);
-		}
-		
-		public boolean checked(Method m) {
-			return this.results.containsKey(m);
-		}
-		
-		public boolean wentExpected(String mname) throws NoSuchElementException {
-			Method m = this.methods.get(mname);
-			if (m == null) throw new NoSuchElementException("missing method '" + mname + "' in my methods: " + this.methods.keySet());
-			return this.results.get(m).goodResult();
-		}
-		
-		public boolean wentExpected(Method m) throws NoSuchElementException {
-			if ( !this.results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
-			return this.results.get(m).goodResult();
-		}
-		
-		public boolean wentExpected() {
-			for (Result r : this.results.values()) {
-				if (r.badResult()) return false;
-			}
-			return true;
-		}
-		
-		public int cehckedCount() {
-			return this.results.size();
-		}
-		
-		public Result getResult(String methodName) throws NoSuchElementException {
-			Method m = methods.get(methodName);
-			if (m == null) throw new NoSuchElementException("missing method '" + methodName + "' in my methods: " + this.methods.keySet());
-			return results.get(m);
-		}
-		
-		public Result getResult(Method m) throws NoSuchElementException {
-			if ( !results.containsKey(m)) throw new NoSuchElementException("missing method '" + m.getName() + "' in my methods: " + this.methods.keySet());
-			return results.get(m);
-		}
-		
-		public Map <Method, Throwable> allUnexpected() {
-			Map <Method, Throwable> ret = new HashMap <Method, Throwable>();
-			results.forEach((m, r) -> {
-				if (r.badResult()) {
-					ret.put(m, r.err);
-				}
-			});
-			return ret;
-		}
-		
-		public void forAll(BiConsumer <Method, Result> c) {
-			results.forEach(c);
-		}
-		
-		public void forAllUnexpected(BiConsumer <Method, Throwable> c) {
-			results.forEach((m, t) -> {
-				if (t.err != null) c.accept(m, t.err);
-			});
-		}
-		
-		public void print() {
-			print(System.out);
-		}
-		
-		public void print(final PrintStream out) {
-			StringBuilder str = new StringBuilder(System.lineSeparator());
-			IntInt cnt = new IntInt();
-			this.results.forEach((m, r) -> {
-				boolean b = (r.goodResult());
-				cnt.a ++ ;
-				if (b) cnt.b ++ ;
-				str.append("   ").append(m.getName()).append(" -> ");
-				if (b) {
-					str.append("good");
-				} else {
-					str.append("bad: ");
-					str.append(r);
-				}
-				str.append(System.lineSeparator());
-			});
-			str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
-			str.insert(0, " -> ");
-			str.insert(0, cnt.a);
-			str.insert(0, '/');
-			str.insert(0, cnt.b);
-			str.insert(0, "RESULT: ");
-			out.print(str);
-		}
-		
-		private String printStr(String name, IntInt ii) {
-			StringBuilder str = new StringBuilder();
-			IntInt cnt = new IntInt();
-			this.results.forEach((m, r) -> {
-				boolean b = (r.goodResult());
-				cnt.a ++ ;
-				if (b) cnt.b ++ ;
-				str.append("   ").append(m.getName()).append(" -> ");
-				if (b) {
-					str.append("good");
-				} else {
-					str.append("bad: ");
-					str.append(r);
-				}
-				str.append(System.lineSeparator());
-			});
-			str.insert(0, System.lineSeparator());
-			str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
-			str.insert(0, " -> ");
-			str.insert(0, cnt.a);
-			str.insert(0, '/');
-			str.insert(0, cnt.b);
-			str.insert(0, ": ");
-			str.insert(0, name);
-			ii.a += cnt.a;
-			ii.b += cnt.b;
-			return str.toString();
-		}
-		
-	}
-	
-	//@formatter:off
-	private static class IntInt { int a, b; }
-	//@formatter:on
-	
-	
 	
 	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String... fullClassNames) {
 		BigCheckResult bcr = new BigCheckResult();
@@ -1723,99 +1548,5 @@ public class Checker implements Runnable {
 	
 	
 	
-	public final static class BigCheckResult {
-		
-		private Map <String, Class <?>>      classes = new HashMap <>();
-		private Map <Class <?>, CheckResult> results = new HashMap <>();
-		
-		public CheckResult put(Class <?> cls, CheckResult result) {
-			classes.put(cls.getName(), cls);
-			return results.put(cls, result);
-		}
-		
-		public CheckResult get(Class <?> cls) {
-			return results.get(cls);
-		}
-		
-		public CheckResult get(String fullClassName) {
-			Class <?> cls = classes.get(fullClassName);
-			return results.get(cls);
-		}
-		
-		public boolean wentExpected(Class <?> cls) {
-			return results.get(cls).wentExpected();
-		}
-		
-		public boolean wentExpected(String fullClassName) {
-			Class <?> cls = classes.get(fullClassName);
-			return results.get(cls).wentExpected();
-		}
-		
-		public Map <Class <?>, CheckResult> allUnexpected() {
-			Map <Class <?>, CheckResult> ret = new HashMap <Class <?>, Checker.CheckResult>();
-			results.forEach((c, r) -> {
-				if ( !r.wentExpected()) {
-					ret.put(c, r);
-				}
-			});
-			return ret;
-		}
-		
-		public void forAllCheckResults(BiConsumer <Class <?>, CheckResult> m) {
-			results.forEach(m);
-		}
-		
-		public void forAllUnexpectedCheckResults(BiConsumer <Class <?>, CheckResult> m) {
-			results.forEach((c, r) -> {
-				if ( !r.wentExpected()) {
-					m.accept(c, r);
-				}
-			});
-		}
-		
-		public void forAll(TriConsumer <Class <?>, Method, Result> tc) {
-			results.forEach((c, r) -> r.forAll((m, t) -> tc.accept(c, m, t)));
-		}
-		
-		public void forAllUnexpected(TriConsumer <Class <?>, Method, Throwable> tc) {
-			results.forEach((c, r) -> r.forAllUnexpected((m, t) -> tc.accept(c, m, t)));
-		}
-		
-		public static interface TriConsumer <A, B, C> {
-			
-			void accept(A a, B b, C c);
-			
-		}
-		
-		public Class <?> getClass(String fullClassName) {
-			return classes.get(fullClassName);
-		}
-		
-		/**
-		 * prints this {@link BigCheckResult} to the {@link PrintStream} {@link System#out}
-		 * 
-		 * @see {@link #print(PrintStream) print(System.out)}
-		 */
-		public void print() {
-			print(System.out);
-		}
-		
-		/**
-		 * prints this {@link BigCheckResult} to the {@link PrintStream}
-		 * 
-		 * @param out
-		 *            the {@link PrintStream} to be used to display this {@link BigCheckResult}
-		 */
-		public void print(PrintStream out) {
-			List <String> prints = new ArrayList <>();
-			IntInt ii = new IntInt();
-			results.forEach((c, r) -> {
-				prints.add(r.printStr(c.getSimpleName(), ii));
-			});
-			out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( (ii.b == ii.a) ? "good" : "bad"));
-			prints.forEach(s -> out.print(s));
-		}
-		
-	}
 	
 }

@@ -1,7 +1,7 @@
 package de.hechler.patrick.check.cc;
 
 import de.hechler.patrick.zeugs.check.Checker;
-import de.hechler.patrick.zeugs.check.Checker.Result;
+import de.hechler.patrick.zeugs.check.Result;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 
