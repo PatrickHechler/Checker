@@ -21,9 +21,10 @@ public class ResultParamChecker {
 	}
 	
 	@Check
-	private void nothing(@ParamCreater(method = {"nothing", "java.lang.String" }) String str, Object nix) {
+	private Object nothing(@ParamCreater(method = {"nothing", "java.lang.String" }) String str, Object nix) {
 		Checker.assertNull(nix);
 		Checker.assertEquals("stingsting", str);
+		return null;
 	}
 	
 	@Check

@@ -1186,14 +1186,22 @@ public class Checker implements Runnable {
 	
 	
 	
+	public boolean checkedAlready() {
+		return result == null;
+	}
+	
 	public CheckResult result() {
-		if (result == null) run();
+		if (result == null) {
+			run();
+		}
 		return result;
 	}
 	
 	@Override
 	public final void run() {
-		if (this.init == null) load(instance.getClass());
+		if (this.init == null) {
+			load(instance.getClass());
+		}
 		this.result = new CheckResult();
 		this.init.forEach(m -> run(m, instance));
 		this.check.forEach(m -> {
@@ -1204,6 +1212,7 @@ public class Checker implements Runnable {
 		});
 		this.finalize.forEach(m -> run(m, instance));
 	}
+	
 	
 	private static Result run(final Method m, Object invoker) {
 		Parameter[] params = m.getParameters();
@@ -1265,8 +1274,6 @@ public class Checker implements Runnable {
 		}
 	}
 	
-	
-	
 	private void load(Class <?> clas) {
 		try {
 			clas.getClassLoader().setClassAssertionStatus(clas.getCanonicalName(), true);
@@ -1305,12 +1312,10 @@ public class Checker implements Runnable {
 		}
 	}
 	
-	
-	
 	/**
 	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
 	 * 
-	 * this method will generated a {@link Checker} to generate a {@link CheckResult}.
+	 * the generated {@link Checker} will be used to return the {@link CheckResult}.
 	 * 
 	 * @param clas
 	 *            the {@link Class} to be checked
@@ -1381,8 +1386,7 @@ public class Checker implements Runnable {
 					return new Checker(instance).result();
 				}
 			}
-		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException ignore) {
-		}
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException ignore) {}
 		Checker c = new Checker();
 		c.load(clas);
 		return c.result();
@@ -1402,8 +1406,7 @@ public class Checker implements Runnable {
 				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
 				Constructor <? extends Checker> c = cls.getConstructor();
 				return c.newInstance();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
-			}
+			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {}
 		}
 		Checker c = new Checker();
 		c.load(clas);
@@ -1545,8 +1548,5 @@ public class Checker implements Runnable {
 		}
 		return bcr;
 	}
-	
-	
-	
 	
 }

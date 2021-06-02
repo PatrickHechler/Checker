@@ -49,7 +49,7 @@ public final class Result {
 	
 	/**
 	 * if this is a 'good' {@link Result} this {@link Method} will return <code>true</code>.<br>
-	 * This is a 'good' {@link Result} if no {@link Throwable} was thrown during or in other words if <code>{@link #err} == null</code> is <code>true</code>
+	 * This is a 'good' {@link Result} if no {@link Throwable} was thrown during the method call or in other words if <code>{@link #err} == null</code> is <code>true</code>
 	 * 
 	 * @return <code>true</code> if this {@link Result} is a 'good' {@link Result}, <code>false</code> if not
 	 */
@@ -59,7 +59,7 @@ public final class Result {
 	
 	/**
 	 * if this is a 'bad' {@link Result} this {@link Method} will return <code>true</code>.<br>
-	 * This is a 'bad' {@link Result} if no {@link Throwable} was thrown during or in other words if <code>{@link #err} != null</code> is <code>true</code>
+	 * This is a 'bad' {@link Result} if a {@link Throwable} was thrown during the method call or in other words if <code>{@link #err} != null</code> is <code>true</code>
 	 * 
 	 * @return <code>true</code> if this {@link Result} is a 'bad' {@link Result}, <code>false</code> if not
 	 */
@@ -96,11 +96,21 @@ public final class Result {
 	@Override
 	public String toString() {
 		if (err != null) {
-			return "error[" + err.getClass().getSimpleName() + ']';
+			return "error[" + err.getClass().getName() + ':' + err.getMessage() + ']';
 		} else if (result != null) {
-			return "result[" + result + ']';
+			return "return[" + result + ']';
 		} else {
-			return "resuled null or void";
+			return "returned null or void";
+		}
+	}
+	
+	public String toSimpleString() {
+		if (err != null) {
+			return err.getClass().getName() + ':' + err.getMessage();
+		} else if (result != null) {
+			return result.toString();
+		} else {
+			return "null or void";
 		}
 	}
 	

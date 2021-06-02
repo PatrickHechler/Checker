@@ -76,26 +76,25 @@ public final class BigCheckResult {
 		return classes.get(fullClassName);
 	}
 	
-	/**
-	 * prints this {@link BigCheckResult} to the {@link PrintStream} {@link System#out}
-	 * 
-	 * @see {@link #print(PrintStream) print(System.out)}
-	 */
 	public void print() {
 		print(System.out);
 	}
 	
-	/**
-	 * prints this {@link BigCheckResult} to the {@link PrintStream}
-	 * 
-	 * @param out
-	 *            the {@link PrintStream} to be used to display this {@link BigCheckResult}
-	 */
 	public void print(PrintStream out) {
 		List <String> prints = new ArrayList <>();
 		IntInt ii = new IntInt();
 		results.forEach((c, r) -> {
-			prints.add(r.printStr(c.getSimpleName(), ii));
+			prints.add(r.toString(c.getSimpleName(), ii, 4));
+		});
+		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( (ii.b == ii.a) ? "good" : "bad"));
+		prints.forEach(s -> out.print(s));
+	}
+	
+	public void print(PrintStream out, int indention) {
+		List <String> prints = new ArrayList <>();
+		IntInt ii = new IntInt();
+		results.forEach((c, r) -> {
+			prints.add(r.toString(c.getSimpleName(), ii, indention));
 		});
 		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( (ii.b == ii.a) ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
