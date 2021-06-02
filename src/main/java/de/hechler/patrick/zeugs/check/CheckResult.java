@@ -423,7 +423,7 @@ public final class CheckResult {
 			start = new String(zw);
 		}
 		StringBuilder str = new StringBuilder(System.lineSeparator());
-		IntInt cnt = new IntInt();
+		IntInt cnt = new IntIntImpl();
 		this.results.forEach((m, r) -> {
 			str.append(start).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
@@ -434,9 +434,9 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.a ++ ;
+			cnt.incA();
 			if (r.goodResult()) {
-				cnt.b ++ ;
+				cnt.incB();
 				str.append("good: ");
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
@@ -451,11 +451,11 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.append(System.lineSeparator());
-		str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
+		str.insert(0, cnt.bothSame() ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.a);
+		str.insert(0, cnt.getA());
 		str.insert(0, '/');
-		str.insert(0, cnt.b);
+		str.insert(0, cnt.getB());
 		str.insert(0, "RESULT: ");
 		out.print(str);
 	}
@@ -465,14 +465,14 @@ public final class CheckResult {
 	 * The given name will be set to the beginning and will be indented by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
-	 * {@link IntInt#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntInt#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntInt} will be changed as above specified: the {@link Result}number will be added to {@link IntInt#a a} and the {@link Result#getResult() good Result} number will be
-	 *            added to {@link IntInt#b b}
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will be
+	 *            added to {@link IntIntImpl#b b}
 	 * @param indention
 	 *            the indention of this {@link CheckResult} and the half indention for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
@@ -485,7 +485,7 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		StringBuilder str = new StringBuilder();
-		IntInt cnt = new IntInt();
+		IntIntImpl cnt = new IntIntImpl();
 		this.results.forEach((m, r) -> {
 			boolean b = r.goodResult();
 			str.append(doubleStart).append(m.getName()).append('(');
@@ -497,9 +497,10 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.a ++ ;
+			cnt.incA();
 			if (b) {
-				cnt.b ++ ;
+				cnt.incB();
+				;
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
 				} else {
@@ -513,16 +514,15 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.insert(0, System.lineSeparator());
-		str.insert(0, (cnt.b == cnt.a) ? "good" : "bad");
+		str.insert(0, cnt.bothSame() ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.a);
+		str.insert(0, cnt.getA());
 		str.insert(0, '/');
-		str.insert(0, cnt.b);
+		str.insert(0, cnt.getB());
 		str.insert(0, ": ");
 		str.insert(0, name);
 		str.insert(0, start);
-		counter.a += cnt.a;
-		counter.b += cnt.b;
+		counter.addBoth(cnt);
 		return str.toString();
 	}
 	
@@ -534,9 +534,8 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		int startIndex = builder.length();
-		IntInt cnt = new IntInt();
+		IntIntImpl cnt = new IntIntImpl();
 		this.results.forEach((m, r) -> {
-			boolean b = r.goodResult();
 			builder.append(doubleStart).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
 			if (params.length > 0) {
@@ -546,9 +545,9 @@ public final class CheckResult {
 				builder.append(',').append(params[i].getSimpleName());
 			}
 			builder.append(')').append(" -> ");
-			cnt.a ++ ;
-			if (b) {
-				cnt.b ++ ;
+			cnt.incA();
+			if (r.goodResult()) {
+				cnt.incB();
 				if (m.getReturnType() == Void.TYPE) {
 					builder.append("good");
 				} else {
@@ -562,16 +561,15 @@ public final class CheckResult {
 			builder.append(System.lineSeparator());
 		});
 		builder.insert(startIndex, System.lineSeparator());
-		builder.insert(startIndex, (cnt.b == cnt.a) ? "good" : "bad");
+		builder.insert(startIndex, cnt.bothSame() ? "good" : "bad");
 		builder.insert(startIndex, " -> ");
-		builder.insert(startIndex, cnt.a);
+		builder.insert(startIndex, cnt.getA());
 		builder.insert(startIndex, '/');
-		builder.insert(startIndex, cnt.b);
+		builder.insert(startIndex, cnt.getB());
 		builder.insert(startIndex, ": ");
 		builder.insert(startIndex, name);
 		builder.insert(startIndex, start);
-		counter.a += cnt.a;
-		counter.b += cnt.b;
+		counter.addBoth(cnt);
 		return builder.toString();
 	}
 	

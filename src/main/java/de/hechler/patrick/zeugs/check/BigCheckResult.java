@@ -82,21 +82,21 @@ public final class BigCheckResult {
 	
 	public void print(PrintStream out) {
 		List <String> prints = new ArrayList <>();
-		IntInt ii = new IntInt();
+		IntInt ii = new IntIntImpl();
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, 4));
 		});
-		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( (ii.b == ii.a) ? "good" : "bad"));
+		out.println("RESULT: " + ii.getB() + '/' + ii.getA() + " -> " + ( ii.bothSame() ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
 	
 	public void print(PrintStream out, int indention) {
 		List <String> prints = new ArrayList <>();
-		IntInt ii = new IntInt();
+		IntInt ii = new IntIntImpl();
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, indention));
 		});
-		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( (ii.b == ii.a) ? "good" : "bad"));
+		out.println("RESULT: " + ii.getB() + '/' + ii.getA() + " -> " + ( ii.bothSame() ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
 	
