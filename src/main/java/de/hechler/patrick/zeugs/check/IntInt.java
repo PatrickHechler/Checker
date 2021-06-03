@@ -15,6 +15,7 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	 * one of the two <code>null</code> acceptable {@link Comparator Comparator}&LT{@link IntInt}&GT}.<br>
 	 * This {@link Comparator Comparator}&LT{@link IntInt}&GT uses the {@link #getFirst()} and {@link #getSecond()} methods to compare at fist the first value and then the second (if the first is
 	 * equal)
+	 * 
 	 * @see #getFirst()
 	 * @see #getSecond()
 	 * @see #compareTo(IntInt)
@@ -56,6 +57,7 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	/**
 	 * one of the two <code>null</code> acceptable {@link Comparator Comparator}&LT{@link IntInt}&GT}.<br>
 	 * This {@link Comparator Comparator}&LT{@link IntInt}&GT just uses the {@link #compareTo(IntInt)} method to compare the two {@link IntInt}s.<br>
+	 * 
 	 * @see #getFirst()
 	 * @see #getSecond()
 	 * @see #compareTo(IntInt)
@@ -82,6 +84,7 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	 * one of the two non <code>null</code> {@link Comparator Comparator}&LT{@link IntInt}&GT}.<br>
 	 * This {@link Comparator Comparator}&LT{@link IntInt}&GT uses the {@link #getFirst()} and {@link #getSecond()} methods to compare at fist the first value and then the second (if the first is
 	 * equal)
+	 * 
 	 * @see #getFirst()
 	 * @see #getSecond()
 	 * @see #compareTo(IntInt)
@@ -114,6 +117,7 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	/**
 	 * one of the two non <code>null</code> {@link Comparator Comparator}&LT{@link IntInt}&GT}.<br>
 	 * This {@link Comparator Comparator}&LT{@link IntInt}&GT just uses the {@link #compareTo(IntInt)} method to compare the two {@link IntInt}s
+	 * 
 	 * @see #getFirst()
 	 * @see #getSecond()
 	 * @see #compareTo(IntInt)
@@ -134,12 +138,12 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	 * @see #isFirstGreatherEqual(int)
 	 * @see #isFirstSmaller(int)
 	 * @see #isFirstSmallerEqual(int)
-	 * @see #isANull()
+	 * @see #isFirstZero()
 	 * @see #isAGreatherB()
 	 * @see #isAGreatherEqualB()
 	 * @see #isASmallerB()
 	 * @see #isASmallerEqualB()
-	 * @see #isEqualA(int)
+	 * @see #isFirstEqual(int)
 	 */
 	int getFirst();
 	
@@ -484,13 +488,101 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	boolean isFirstSmallerEqual(int c);
 	
 	/**
+	 * returns <code>true</code> when the given value {@code c} is the first value of this {@link IntInt}, if not <code>false</code> will be returned<br>
+	 * this method never returns the same value as {@link #isFirstNotEqual(int)}
 	 * 
 	 * @param c
-	 * @return
+	 *            the value to be compared with the first value of this {@link IntInt}
+	 * @return <code>true</code> when the given value {@code c} is the first value. if not <code>false</code>
+	 * @implNote it works like <code>({@link #getFirst()} == c)</code> or
+	 *           <code>{{@link #subFirst(int) subFirst(c)}; boolean bool = {@link #isFirstZero()}; {@link #addFirst(int) addFirst(c)}; return bool;}</code>
+	 * @see #getFirst()
+	 * @see #isFirstZero()
+	 * @see #bothSame()
 	 */
-	boolean isEqualA(int c);
+	boolean isFirstEqual(int c);
 	
-	boolean isANull();
+	/**
+	 * returns <code>true</code> if the given value is not the first value of this {@link IntInt}, if they are equal <code>false</code> is returned<br>
+	 * this method never returns the same value as {@link #isFirstEqual(int)}
+	 * 
+	 * @param c
+	 *            the value to check with the first value
+	 * @return <code>true</code> if the given value is not the first value of this {@link IntInt}, if they are equal <code>false</code>
+	 * @implNote it works like <code>({@link #getFirst()} != c)</code> or <code>(!{@link #isFirstEqual(int) isFirstEqual(c)})</code>
+	 * @see #isFirstEqual(int)
+	 * @see #isFirstGreather(int)
+	 * @see #isFirstGreatherEqual(int)
+	 * @see #isFirstSmaller(int)
+	 * @see #isFirstSmallerEqual(int)
+	 * @see #isFirstNotZero()
+	 */
+	boolean isFirstNotEqual(int c);
+	
+	/**
+	 * returns <code>true</code> if the first value of this {@link IntInt} is {@code 0}. if the first value is any other value it will return <code>false</code> This method returns never the same
+	 * value as {@link #isFirstNotZero()}.
+	 * 
+	 * @return <code>true</code> if the first value is {@code 0} and <code>false</code> if not
+	 * @implNote it works like <code>({@link #getFirst()} == 0)</code> or <code>({@link #isFirstEqual(int) isFirstEqual(0)}</code>
+	 * @see #isFirstEqual(int)
+	 * @see #isFirstNotZero()
+	 * @see #isFirstPositive()
+	 * @see #isFirstNegative()
+	 * @see #isFirstNotPositive()
+	 * @see #isFirstNotNegative()
+	 * @see #aSignum()
+	 */
+	boolean isFirstZero();
+	
+	/**
+	 * returns <code>true</code> if the first value of this {@link IntInt} is not {@code 0}. If the first value is {@code 0} <code>false</code> will be the return value.<br>
+	 * This method returns never the same value as {@link #isFirstZero()}.
+	 * 
+	 * @return <code>true</code> if the first value of this {@link IntInt} is not {@code 0}. If the first value is {@code 0} <code>false</code>
+	 * @implNote it works like <code>(!{@link #isFirstZero()})</code>, <code>({@link #getFirst()} != 0)</code>, <code>({@link #isFirstNotEqual(int) isFirstNotEqual(0)})</code>
+	 * @see #isFirstNotEqual(int)
+	 * @see #isFirstEqual(int)
+	 * @see #isFirstZero()
+	 * @see #isFirstPositive()
+	 * @see #isFirstNegative()
+	 * @see #isFirstNotPositive()
+	 * @see #isFirstNotNegative()
+	 * @see #aSignum()
+	 */
+	boolean isFirstNotZero();
+	
+	/**
+	 * returns <code>true</code> if the first value of this {@link IntInt} is greater than {@code 0} (not equal) and returns <code>false</code> if the first value of this {@link IntInt} is smaller or
+	 * equal {@code 0}.
+	 * 
+	 * @return <code>true</code> if the first value of this {@link IntInt} is greater than {@code 0} (not equal). if the first value of this {@link IntInt} is smaller or equal {@code 0}
+	 *         <code>false</code>
+	 * @implNote it works like <code>({@link #getFirst()} > 0)</code>, <code>({@link #isFirstGreather(int) isFirstGreather(0)})</code> or
+	 *           <code>({@link #isFirstGreatherEqual(int) isFirstGreatherEqual(1)})</code>
+	 * @see #aSignum()
+	 * @see #isFirstNegative()
+	 * @see #isFirstNotPositive()
+	 * @see #isFirstNotNegative()
+	 * @see #isFirstGreather(int)
+	 */
+	boolean isFirstPositive();
+	//TODO more Javadoc
+	boolean isFirstNotPositive();
+	
+	boolean isFirstNegative();
+	
+	boolean isFirstNotNegative();
+	
+	boolean isASignumEqual(int c);
+	
+	boolean isASignumNotEqual(int c);
+	
+	boolean isASignumEqualA();
+	
+	boolean isASignumNotEqualA();
+	
+	int aSignum();
 	
 	int compareWithA(int c);
 	
@@ -514,6 +606,26 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	
 	boolean isBNull();
 	
+	boolean isBNotNull();
+	
+	boolean isBPositive();
+	
+	boolean isBNotPositive();
+	
+	boolean isBNegative();
+	
+	boolean isBNotNegative();
+	
+	boolean isBSignumEqual(int c);
+	
+	boolean isBSignumNotEqual(int c);
+	
+	boolean isBSignumEqualB();
+	
+	boolean isBSignumNotEqualB();
+	
+	int bSignum();
+	
 	int compareWithB(int c);
 	
 	boolean isBGreatherA();
@@ -526,7 +638,19 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	
 	boolean bothNull();
 	
+	boolean bothNotNull();
+	
+	boolean bothPositive();
+	
+	boolean bothNegative();
+	
 	boolean bothSame();
+	
+	boolean bothSameSignums();
+	
+	boolean bothDiffrentSignums();
+	
+	boolean diffrentValues();
 	
 	boolean same(int a, int b);
 	

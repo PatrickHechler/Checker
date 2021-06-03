@@ -227,7 +227,7 @@ public class IntIntImpl implements IntInt {
 	}
 	
 	@Override
-	public boolean isEqualA(int c) {
+	public boolean isFirstEqual(int c) {
 		return this.a == c;
 	}
 	
@@ -252,7 +252,7 @@ public class IntIntImpl implements IntInt {
 	}
 	
 	@Override
-	public boolean isANull() {
+	public boolean isFirstZero() {
 		return this.a == 0;
 	}
 	
@@ -610,7 +610,7 @@ public class IntIntImpl implements IntInt {
 		}
 		
 		@Override
-		public boolean isEqualA(int c) {
+		public boolean isFirstEqual(int c) {
 			return IntIntImpl.this.b == c;
 		}
 		
@@ -635,7 +635,7 @@ public class IntIntImpl implements IntInt {
 		}
 		
 		@Override
-		public boolean isANull() {
+		public boolean isFirstZero() {
 			return IntIntImpl.this.b == 0;
 		}
 		
@@ -760,7 +760,331 @@ public class IntIntImpl implements IntInt {
 				}
 			}
 		}
+
+		@Override
+		public boolean isFirstNotEqual(int c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isFirstNotZero() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isFirstPositive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isFirstNotPositive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isFirstNegative() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isFirstNotNegative() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isASignumEqual(int c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isASignumNotEqual(int c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isASignumEqualA() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isASignumNotEqualA() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public int aSignum() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public boolean isBNotNull() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBPositive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBNotPositive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBNegative() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBNotNegative() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBSignumEqual(int c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBSignumNotEqual(int c) {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBSignumEqualB() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean isBSignumNotEqualB() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public int bSignum() {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public boolean bothNotNull() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean bothPositive() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean bothNegative() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean bothSameSignums() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean bothDiffrentSignums() {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public boolean diffrentValues() {
+			// TODO Auto-generated method stub
+			return false;
+		}
 		
+	}
+
+	@Override
+	public boolean isFirstNotEqual(int c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isFirstNotZero() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isFirstPositive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isFirstNotPositive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isFirstNegative() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isFirstNotNegative() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isASignumEqual(int c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isASignumNotEqual(int c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isASignumEqualA() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isASignumNotEqualA() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int aSignum() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean isBNotNull() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBPositive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBNotPositive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBNegative() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBNotNegative() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBSignumEqual(int c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBSignumNotEqual(int c) {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBSignumEqualB() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean isBSignumNotEqualB() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public int bSignum() {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public boolean bothNotNull() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean bothPositive() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean bothNegative() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean bothSameSignums() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean bothDiffrentSignums() {
+		// TODO Auto-generated method stub
+		return false;
+	}
+
+	@Override
+	public boolean diffrentValues() {
+		// TODO Auto-generated method stub
+		return false;
 	}
 	
 }
