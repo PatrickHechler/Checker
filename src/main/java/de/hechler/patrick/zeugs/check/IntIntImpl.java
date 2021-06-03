@@ -3,13 +3,6 @@ package de.hechler.patrick.zeugs.check;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * this class is an easy a wrapper about two primitiv {@code int} values.<br>
- * 
- * This class allows to make some simple checks and operations with the two {@code int} values (like {@link #addA(int)}, {@link #isBGreather(int)} or {@link #bothSame()}).
- * 
- * @author Patrick
- */
 public class IntIntImpl implements IntInt {
 	
 	/** UID */
@@ -20,11 +13,15 @@ public class IntIntImpl implements IntInt {
 	/**
 	 * the first {@code int} value
 	 */
-	private int a;
+	private int                         a;
 	/**
 	 * the second {@code int} value
 	 */
-	private int b;
+	private int                         b;
+	/**
+	 * the reversed {@link IntInt} of this {@link IntIntImpl}
+	 */
+	private transient ReverseIntIntImpl reverse;
 	
 	/**
 	 * creates an {@link IntIntImpl} with both values set to {@code 0}
@@ -55,72 +52,72 @@ public class IntIntImpl implements IntInt {
 		this.a = copy.a;
 		this.b = copy.b;
 	}
-	//TODO more Javadoc!
+	
 	@Override
-	public int getA() {
+	public int getFirst() {
 		return this.a;
 	}
 	
 	@Override
-	public void setA(int a) {
+	public void setFirst(int a) {
 		this.a = a;
 	}
 	
 	@Override
-	public void addA(int val) {
+	public void addFirst(int val) {
 		this.a += val;
 	}
 	
 	@Override
-	public void subA(int val) {
+	public void subFirst(int val) {
 		this.a -= val;
 	}
 	
 	@Override
-	public void incA() {
+	public void incFirst() {
 		this.a ++ ;
 	}
 	
 	
 	@Override
-	public void decA() {
+	public void decFirst() {
 		this.a -- ;
 	}
 	
 	@Override
-	public int getB() {
+	public int getSecond() {
 		return this.b;
 	}
 	
 	@Override
-	public void setB(int b) {
+	public void setSecond(int b) {
 		this.b = b;
 	}
 	
 	@Override
-	public void addB(int b) {
+	public void addSecond(int b) {
 		this.b += b;
 	}
 	
 	@Override
-	public void subB(int b) {
+	public void subSecond(int b) {
 		this.b -= b;
 	}
 	
 	@Override
-	public void incB() {
+	public void incSecond() {
 		this.b ++ ;
 	}
 	
 	@Override
-	public void decB() {
+	public void decSecond() {
 		this.b -- ;
 	}
 	
 	@Override
 	public void setBoth(IntInt val) {
-		this.a = val.getA();
-		this.b = val.getB();
+		this.a = val.getFirst();
+		this.b = val.getSecond();
 	}
 	
 	public void setBoth(IntIntImpl val) {
@@ -141,9 +138,15 @@ public class IntIntImpl implements IntInt {
 	}
 	
 	@Override
+	public void setBothNull() {
+		this.a = 0;
+		this.b = 0;
+	}
+	
+	@Override
 	public void addBoth(IntInt val) {
-		this.a += val.getA();
-		this.b += val.getB();
+		this.a += val.getFirst();
+		this.b += val.getSecond();
 	}
 	
 	public void addBoth(IntIntImpl val) {
@@ -165,8 +168,8 @@ public class IntIntImpl implements IntInt {
 	
 	@Override
 	public void subBoth(IntInt val) {
-		this.a -= val.getA();
-		this.b -= val.getB();
+		this.a -= val.getFirst();
+		this.b -= val.getSecond();
 	}
 	
 	public void subBoth(IntIntImpl val) {
@@ -204,27 +207,27 @@ public class IntIntImpl implements IntInt {
 	}
 	
 	@Override
-	public boolean isAGreather(int c) {
+	public boolean isFirstGreather(int c) {
 		return this.a > c;
 	}
 	
 	@Override
-	public boolean isAGreatherEqual(int c) {
+	public boolean isFirstGreatherEqual(int c) {
 		return this.a >= c;
 	}
 	
 	@Override
-	public boolean isASmaller(int c) {
+	public boolean isFirstSmaller(int c) {
 		return this.a < c;
 	}
 	
 	@Override
-	public boolean isASmallerEqual(int c) {
+	public boolean isFirstSmallerEqual(int c) {
 		return this.a <= c;
 	}
 	
 	@Override
-	public boolean isA(int c) {
+	public boolean isEqualA(int c) {
 		return this.a == c;
 	}
 	
@@ -321,15 +324,13 @@ public class IntIntImpl implements IntInt {
 	@Override
 	public boolean same(IntInt other) {
 		if (other == null) return false;
-		return this.a == other.getA() && this.b == other.getB();
+		return this.a == other.getFirst() && this.b == other.getSecond();
 	}
 	
 	public boolean same(IntIntImpl other) {
 		if (other == null) return false;
 		return this.a == other.a && this.b == other.b;
 	}
-	
-	private ReverseIntIntImpl reverse;
 	
 	@Override
 	public ReverseIntIntImpl reverse() {
@@ -343,7 +344,7 @@ public class IntIntImpl implements IntInt {
 	public IntIntImpl clone() {
 		try {
 			return (IntIntImpl) super.clone();
-		} catch (CloneNotSupportedException e) {
+		} catch (CloneNotSupportedException | ClassCastException e) {
 			return new IntIntImpl(this);
 		}
 	}
@@ -397,75 +398,109 @@ public class IntIntImpl implements IntInt {
 		return "IntIntImpl[a=" + a + ", b=" + b + "]";
 	}
 	
+	@Override
+	public int compareWithA(int c) {
+		return this.a > c ? 1 : this.a == c ? 0 : -1;
+	}
+	
+	@Override
+	public int compareWithB(int c) {
+		return this.b > c ? 1 : this.b == c ? 0 : -1;
+	}
+	
+	@Override
+	public int compareTo(IntInt o) {
+		int zw = o.getFirst();
+		if (this.a < zw) {
+			return -1;
+		} else if (this.a > zw) {
+			return 1;
+		} else {
+			zw = o.getSecond();
+			if (this.b < zw) {
+				return -1;
+			} else if (this.b > zw) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+	}
+	
 	public class ReverseIntIntImpl implements IntInt {
 		
 		/** UID */
 		private static final long serialVersionUID = -579760959814455169L;
 		
+		/**
+		 * the {@link ReverseIntIntImpl} is only accessible with the {@link #reverse()} method of the {@link IntIntImpl}
+		 */
+		protected ReverseIntIntImpl() {}
+		
 		@Override
-		public int getA() {
+		public int getFirst() {
 			return IntIntImpl.this.b;
 		}
 		
 		@Override
-		public void setA(int a) {
+		public void setFirst(int a) {
 			IntIntImpl.this.b = a;
 		}
 		
 		@Override
-		public void addA(int val) {
+		public void addFirst(int val) {
 			IntIntImpl.this.b += val;
 		}
 		
 		@Override
-		public void subA(int val) {
+		public void subFirst(int val) {
 			IntIntImpl.this.b -= val;
 		}
 		
 		@Override
-		public void incA() {
+		public void incFirst() {
 			IntIntImpl.this.b ++ ;
 		}
 		
 		@Override
-		public void decA() {
+		public void decFirst() {
 			IntIntImpl.this.b ++ ;
 		}
 		
 		@Override
-		public int getB() {
+		public int getSecond() {
 			return IntIntImpl.this.a;
 		}
 		
 		@Override
-		public void setB(int b) {
+		public void setSecond(int b) {
 			IntIntImpl.this.a = b;
 		}
 		
 		@Override
-		public void addB(int b) {
+		public void addSecond(int b) {
 			IntIntImpl.this.a += b;
 		}
 		
 		@Override
-		public void subB(int b) {
+		public void subSecond(int b) {
 			IntIntImpl.this.a -= b;
 		}
 		
 		@Override
-		public void incB() {
+		public void incSecond() {
 			IntIntImpl.this.a ++ ;
 		}
 		
 		@Override
-		public void decB() {
+		public void decSecond() {
 			IntIntImpl.this.a -- ;
 		}
 		
 		@Override
 		public void setBoth(IntInt val) {
-			IntIntImpl.this.b = val.getA();
-			IntIntImpl.this.a = val.getB();
+			IntIntImpl.this.b = val.getFirst();
+			IntIntImpl.this.a = val.getSecond();
 		}
 		
 		public void setBoth(IntIntImpl val) {
@@ -486,9 +521,15 @@ public class IntIntImpl implements IntInt {
 		}
 		
 		@Override
+		public void setBothNull() {
+			IntIntImpl.this.b = 0;
+			IntIntImpl.this.a = 0;
+		}
+		
+		@Override
 		public void addBoth(IntInt val) {
-			IntIntImpl.this.b += val.getA();
-			IntIntImpl.this.a += val.getB();
+			IntIntImpl.this.b += val.getFirst();
+			IntIntImpl.this.a += val.getSecond();
 		}
 		
 		public void addBoth(IntIntImpl val) {
@@ -510,8 +551,8 @@ public class IntIntImpl implements IntInt {
 		
 		@Override
 		public void subBoth(IntInt val) {
-			IntIntImpl.this.b -= val.getA();
-			IntIntImpl.this.a -= val.getB();
+			IntIntImpl.this.b -= val.getFirst();
+			IntIntImpl.this.a -= val.getSecond();
 		}
 		
 		public void subBoth(IntIntImpl val) {
@@ -549,27 +590,27 @@ public class IntIntImpl implements IntInt {
 		}
 		
 		@Override
-		public boolean isAGreather(int c) {
+		public boolean isFirstGreather(int c) {
 			return IntIntImpl.this.b > c;
 		}
 		
 		@Override
-		public boolean isAGreatherEqual(int c) {
+		public boolean isFirstGreatherEqual(int c) {
 			return IntIntImpl.this.b >= c;
 		}
 		
 		@Override
-		public boolean isASmaller(int c) {
+		public boolean isFirstSmaller(int c) {
 			return IntIntImpl.this.b < c;
 		}
 		
 		@Override
-		public boolean isASmallerEqual(int c) {
+		public boolean isFirstSmallerEqual(int c) {
 			return IntIntImpl.this.b <= c;
 		}
 		
 		@Override
-		public boolean isA(int c) {
+		public boolean isEqualA(int c) {
 			return IntIntImpl.this.b == c;
 		}
 		
@@ -665,7 +706,7 @@ public class IntIntImpl implements IntInt {
 		
 		@Override
 		public boolean same(IntInt other) {
-			return IntIntImpl.this.b == other.getA() && IntIntImpl.this.a == other.getB();
+			return IntIntImpl.this.b == other.getFirst() && IntIntImpl.this.a == other.getSecond();
 		}
 		
 		public boolean same(IntIntImpl other) {
@@ -679,12 +720,45 @@ public class IntIntImpl implements IntInt {
 		
 		@Override
 		public ReverseIntIntImpl clone() {
-			return IntIntImpl.this.clone().reverse();
+			try {
+				return ((IntIntImpl) IntIntImpl.super.clone()).reverse();
+			} catch (CloneNotSupportedException | ClassCastException e) {
+				return new IntIntImpl(IntIntImpl.this).reverse();
+			}
 		}
 		
 		@Override
 		public String toString() {
 			return "IntIntRevI[a=" + IntIntImpl.this.b + ", b=" + IntIntImpl.this.a + "]";
+		}
+		
+		@Override
+		public int compareWithA(int c) {
+			return IntIntImpl.this.b > c ? 1 : IntIntImpl.this.b == c ? 0 : -1;
+		}
+		
+		@Override
+		public int compareWithB(int c) {
+			return IntIntImpl.this.a > c ? 1 : IntIntImpl.this.a == c ? 0 : -1;
+		}
+		
+		@Override
+		public int compareTo(IntInt o) {
+			int zw = o.getFirst();
+			if (IntIntImpl.this.b < zw) {
+				return -1;
+			} else if (IntIntImpl.this.b > zw) {
+				return 1;
+			} else {
+				zw = o.getSecond();
+				if (IntIntImpl.this.a < zw) {
+					return -1;
+				} else if (IntIntImpl.this.a > zw) {
+					return 1;
+				} else {
+					return 0;
+				}
+			}
 		}
 		
 	}

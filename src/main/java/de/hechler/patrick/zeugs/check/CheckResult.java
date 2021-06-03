@@ -434,9 +434,9 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.incA();
+			cnt.incFirst();
 			if (r.goodResult()) {
-				cnt.incB();
+				cnt.incSecond();
 				str.append("good: ");
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
@@ -453,16 +453,16 @@ public final class CheckResult {
 		str.append(System.lineSeparator());
 		str.insert(0, cnt.bothSame() ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.getA());
+		str.insert(0, cnt.getFirst());
 		str.insert(0, '/');
-		str.insert(0, cnt.getB());
+		str.insert(0, cnt.getSecond());
 		str.insert(0, "RESULT: ");
 		out.print(str);
 	}
 	
 	/**
-	 * creates a detailed {@link String} which contains all {@link Result}s of this {@link CheckResult} indented by the doubled given indention.<br>
-	 * The given name will be set to the beginning and will be indented by the given indention.<br>
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
 	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
@@ -471,11 +471,15 @@ public final class CheckResult {
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will be
-	 *            added to {@link IntIntImpl#b b}
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link IntIntImpl#b b}
 	 * @param indention
-	 *            the indention of this {@link CheckResult} and the half indention for the methods of this {@link CheckResult}
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
+	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, IntInt, int)
+	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params are the same as by
+	 *           calling this method
+	 * @see #toString(StringBuilder, String, IntInt, int)
 	 */
 	public String toString(String name, IntInt counter, int indention) {
 		final char[] start;
@@ -497,9 +501,9 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.incA();
+			cnt.incFirst();
 			if (b) {
-				cnt.incB();
+				cnt.incSecond();
 				;
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
@@ -516,9 +520,9 @@ public final class CheckResult {
 		str.insert(0, System.lineSeparator());
 		str.insert(0, cnt.bothSame() ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.getA());
+		str.insert(0, cnt.getFirst());
 		str.insert(0, '/');
-		str.insert(0, cnt.getB());
+		str.insert(0, cnt.getSecond());
 		str.insert(0, ": ");
 		str.insert(0, name);
 		str.insert(0, start);
@@ -526,7 +530,25 @@ public final class CheckResult {
 		return str.toString();
 	}
 	
-	public String toString(StringBuilder builder, String name, IntInt counter, int indention) {
+	/**
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
+	 * 
+	 * The given {@code counter} will be modified:<br>
+	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * 
+	 * @param builder
+	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
+	 * @param name
+	 *            the name of this {@link CheckResult}
+	 * @param counter
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link IntIntImpl#b b}
+	 * @param indention
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
+	 */
+	public void toString(StringBuilder builder, String name, IntInt counter, int indention) {
 		final char[] start;
 		final char[] doubleStart;
 		start = new char[indention];
@@ -545,9 +567,9 @@ public final class CheckResult {
 				builder.append(',').append(params[i].getSimpleName());
 			}
 			builder.append(')').append(" -> ");
-			cnt.incA();
+			cnt.incFirst();
 			if (r.goodResult()) {
-				cnt.incB();
+				cnt.incSecond();
 				if (m.getReturnType() == Void.TYPE) {
 					builder.append("good");
 				} else {
@@ -563,14 +585,13 @@ public final class CheckResult {
 		builder.insert(startIndex, System.lineSeparator());
 		builder.insert(startIndex, cnt.bothSame() ? "good" : "bad");
 		builder.insert(startIndex, " -> ");
-		builder.insert(startIndex, cnt.getA());
+		builder.insert(startIndex, cnt.getFirst());
 		builder.insert(startIndex, '/');
-		builder.insert(startIndex, cnt.getB());
+		builder.insert(startIndex, cnt.getSecond());
 		builder.insert(startIndex, ": ");
 		builder.insert(startIndex, name);
 		builder.insert(startIndex, start);
 		counter.addBoth(cnt);
-		return builder.toString();
 	}
 	
 }

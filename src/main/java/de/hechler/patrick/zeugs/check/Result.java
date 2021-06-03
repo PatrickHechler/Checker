@@ -104,6 +104,11 @@ public final class Result {
 		}
 	}
 	
+	/**
+	 * this method returns a {@link String} with the {@link #err}or or {@link #result} of this {@link Result}. There will be no Prefix or Postfix
+	 * 
+	 * @return a {@link String} with the {@link #err}or or {@link #result} of this {@link Result} without any Prefix and without any Postfix
+	 */
 	public String toSimpleString() {
 		if (err != null) {
 			return err.getClass().getName() + ':' + err.getMessage();
