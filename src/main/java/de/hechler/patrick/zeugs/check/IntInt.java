@@ -206,6 +206,33 @@ public interface IntInt extends Serializable, Cloneable, Comparable <IntInt> {
 	void decFirst();
 	
 	/**
+	 * sets the second value to the first value
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #setFirst(int) setFirst(zw)}}</code> or <code>{int zw = {@link #getSecond()}; {@link #setBoth(int) setBoth(zw)};}</code>
+	 * @see #setFirst(int)
+	 * @see #addFirstWithSecond()
+	 * @see #subFirstWithSecond()
+	 */
+	void setFirstWithSecond();
+	
+	/**
+	 * adds the second value to the first value of this In
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #addFirst(int) addFirst(zw)};}</code>
+	 * @see #addFirst(int)
+	 * @see #setFirstWithSecond()
+	 * @see #subFirstWithSecond()
+	 */
+	void addFirstWithSecond();
+	
+	/**
+	 * subtracts the second value from the first value of this {@link IntInt}
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #subFirst(int) subFirst(zw)};}</code>
+	 * @see #subFirst(int)
+	 * @see #setFirstWithSecond()
+	 * @see #addFirstWithSecond()
+	 */
+	void subFirstWithSecond();
+	
+	/**
 	 * returns the second value of this {@link IntInt}
 	 * 
 	 * @return the second value of this {@link IntInt}
