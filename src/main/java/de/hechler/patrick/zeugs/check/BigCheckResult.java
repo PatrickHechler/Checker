@@ -82,7 +82,7 @@ public final class BigCheckResult {
 	
 	public void print(PrintStream out) {
 		List <String> prints = new ArrayList <>();
-		IntInt ii = new IntIntImpl();
+		IntInt ii = new AbstractIntInt();
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, 4));
 		});
@@ -92,7 +92,7 @@ public final class BigCheckResult {
 	
 	public void print(PrintStream out, int indention) {
 		List <String> prints = new ArrayList <>();
-		IntInt ii = new IntIntImpl();
+		IntInt ii = new AbstractIntInt();
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, indention));
 		});

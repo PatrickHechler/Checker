@@ -423,7 +423,7 @@ public final class CheckResult {
 			start = new String(zw);
 		}
 		StringBuilder str = new StringBuilder(System.lineSeparator());
-		IntInt cnt = new IntIntImpl();
+		IntInt cnt = new AbstractIntInt();
 		this.results.forEach((m, r) -> {
 			str.append(start).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
@@ -465,14 +465,14 @@ public final class CheckResult {
 	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * {@link AbstractIntInt#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link AbstractIntInt#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
+	 *            the {@link AbstractIntInt} will be changed as above specified: the {@link Result}number will be added to {@link AbstractIntInt#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link AbstractIntInt#b b}
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
@@ -489,7 +489,7 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		StringBuilder str = new StringBuilder();
-		IntIntImpl cnt = new IntIntImpl();
+		AbstractIntInt cnt = new AbstractIntInt();
 		this.results.forEach((m, r) -> {
 			boolean b = r.goodResult();
 			str.append(doubleStart).append(m.getName()).append('(');
@@ -535,16 +535,16 @@ public final class CheckResult {
 	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * {@link AbstractIntInt#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link AbstractIntInt#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param builder
 	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
+	 *            the {@link AbstractIntInt} will be changed as above specified: the {@link Result}number will be added to {@link AbstractIntInt#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link AbstractIntInt#b b}
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 */
@@ -556,7 +556,7 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		int startIndex = builder.length();
-		IntIntImpl cnt = new IntIntImpl();
+		AbstractIntInt cnt = new AbstractIntInt();
 		this.results.forEach((m, r) -> {
 			builder.append(doubleStart).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
