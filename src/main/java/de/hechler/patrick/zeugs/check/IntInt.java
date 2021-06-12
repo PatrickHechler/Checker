@@ -686,7 +686,7 @@ public interface IntInt extends Serializable, Comparable <IntInt> {
 	 * returns <code>true</code> if the first value of this {@link IntInt} is negative (below zero) and <code>false</code> if it is at least zero
 	 * 
 	 * @return <code>true</code> if the first value of this {@link IntInt} is negative (below zero) and <code>false</code> if it is at least zero
-	 * @implNote it works like <code>({@link #getFirst()} &LT 0)</code>, <code> ({@link #isFirstSmaller(int) isFirstSmaller(0)})</code> or
+	 * @implNote it works like <code>({@link #getFirst()} &LT 0)</code>, <code>({@link #isFirstSmaller(int) isFirstSmaller(0)})</code> or
 	 *           <code> ({@link #isFirstSmallerEqual(int) isFirstSmallerEqual(-1)})</code>
 	 * @see #isFirstNotNegative()
 	 * @see #aSignum()
@@ -694,9 +694,18 @@ public interface IntInt extends Serializable, Comparable <IntInt> {
 	 */
 	boolean isFirstNegative();
 	
-	// TODO more Javadoc
+	/**
+	 * returns <code>true</code> if the first value of this {@link IntInt} is not negative and <code>false</code> if it is at lower than zero.<br>
+	 * this method is the equivalent to {@link #isFirstNegative()}
+	 * 
+	 * @return <code>true</code> if the first value of this {@link IntInt} is not negative and <code>false</code> if it is at lower than zero
+	 * @implNote it works like <code>(!{@link #isFirstNegative()})</code>, <code>({@link #aSignum()} >= 0)</code> or <code>({@link #isFirstGreatherEqual(int) isFirstGreatherEqual(0)})</code>
+	 * @see #aSignum()
+	 * @see #getFirst()
+	 * @see #isFirstNegative()
+	 */
 	boolean isFirstNotNegative();
-	
+	//TODO Javadoc
 	boolean isASignumEqual(int c);
 	
 	boolean isASignumNotEqual(int c);
