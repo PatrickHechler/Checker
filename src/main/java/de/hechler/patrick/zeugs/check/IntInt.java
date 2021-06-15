@@ -308,6 +308,36 @@ public interface IntInt extends Serializable, Comparable <IntInt> {
 	void decSecond();
 	
 	/**
+	 * sets the second value to the first value
+	 * 
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #setFirst(int) setFirst(zw)}}</code> or <code>{int zw = {@link #getSecond()}; {@link #setBoth(int) setBoth(zw)};}</code>
+	 * @see #setFirst(int)
+	 * @see #addSecondWithFirst()
+	 * @see #subSecondWithFirst()
+	 */
+	void setSecondWithFirst();
+	
+	/**
+	 * adds the second value to the first value of this In
+	 * 
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #addFirst(int) addFirst(zw)};}</code>
+	 * @see #addFirst(int)
+	 * @see #setSecondWithFirst()
+	 * @see #subSecondWithFirst()
+	 */
+	void addSecondWithFirst();
+	
+	/**
+	 * subtracts the second value from the first value of this {@link IntInt}
+	 * 
+	 * @implNote it works like <code>{int zw = {@link #getSecond()}; {@link #subFirst(int) subFirst(zw)};}</code>
+	 * @see #subFirst(int)
+	 * @see #setSecondWithFirst()
+	 * @see #addSecondWithFirst()
+	 */
+	void subSecondWithFirst();
+	
+	/**
 	 * sets both values of this {@link IntInt} to the values of the given {@link IntInt}.<br>
 	 * This method can be used to copy to existing {@link IntInt}s or to switch between implementations of the {@link IntInt} interface
 	 * 
@@ -736,6 +766,8 @@ public interface IntInt extends Serializable, Comparable <IntInt> {
 	
 	boolean isB(int c);
 	
+	boolean isBNot(int c);
+	
 	boolean isBNull();
 	
 	boolean isBNotNull();
@@ -796,5 +828,5 @@ public interface IntInt extends Serializable, Comparable <IntInt> {
 	
 	@Override
 	int compareTo(IntInt o);
-	
+
 }
