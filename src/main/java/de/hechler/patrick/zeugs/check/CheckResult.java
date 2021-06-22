@@ -451,7 +451,7 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.append(System.lineSeparator());
-		str.insert(0, cnt.bothSame() ? "good" : "bad");
+		str.insert(0, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
 		str.insert(0, " -> ");
 		str.insert(0, cnt.getFirst());
 		str.insert(0, '/');
@@ -518,7 +518,7 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.insert(0, System.lineSeparator());
-		str.insert(0, cnt.bothSame() ? "good" : "bad");
+		str.insert(0, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
 		str.insert(0, " -> ");
 		str.insert(0, cnt.getFirst());
 		str.insert(0, '/');
@@ -526,7 +526,8 @@ public final class CheckResult {
 		str.insert(0, ": ");
 		str.insert(0, name);
 		str.insert(0, start);
-		counter.addBoth(cnt);
+		counter.addFirst(cnt.getFirst());
+		counter.addSecond(cnt.getSecond());
 		return str.toString();
 	}
 	
@@ -583,7 +584,7 @@ public final class CheckResult {
 			builder.append(System.lineSeparator());
 		});
 		builder.insert(startIndex, System.lineSeparator());
-		builder.insert(startIndex, cnt.bothSame() ? "good" : "bad");
+		builder.insert(startIndex, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
 		builder.insert(startIndex, " -> ");
 		builder.insert(startIndex, cnt.getFirst());
 		builder.insert(startIndex, '/');
@@ -591,7 +592,8 @@ public final class CheckResult {
 		builder.insert(startIndex, ": ");
 		builder.insert(startIndex, name);
 		builder.insert(startIndex, start);
-		counter.addBoth(cnt);
+		counter.addFirst(cnt.getFirst());
+		counter.addSecond(cnt.getSecond());
 	}
 	
 }

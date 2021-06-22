@@ -86,7 +86,7 @@ public final class BigCheckResult {
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, 4));
 		});
-		out.println("RESULT: " + ii.getSecond() + '/' + ii.getFirst() + " -> " + ( ii.bothSame() ? "good" : "bad"));
+		out.println("RESULT: " + ii.getSecond() + '/' + ii.getFirst() + " -> " + ( ii.compareFirstWithSecond() == 0 ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
 	
@@ -96,7 +96,7 @@ public final class BigCheckResult {
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, indention));
 		});
-		out.println("RESULT: " + ii.getSecond() + '/' + ii.getFirst() + " -> " + ( ii.bothSame() ? "good" : "bad"));
+		out.println("RESULT: " + ii.getSecond() + '/' + ii.getFirst() + " -> " + ( ii.compareFirstWithSecond() == 0 ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
 	
