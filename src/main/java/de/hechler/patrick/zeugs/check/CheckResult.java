@@ -423,7 +423,7 @@ public final class CheckResult {
 			start = new String(zw);
 		}
 		StringBuilder str = new StringBuilder(System.lineSeparator());
-		IntInt cnt = new IntIntImpl();
+		TwoInts cnt = new TwoInts();
 		this.results.forEach((m, r) -> {
 			str.append(start).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
@@ -434,9 +434,9 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.incFirst();
+			cnt.a ++ ;
 			if (r.goodResult()) {
-				cnt.incSecond();
+				cnt.b ++ ;
 				str.append("good: ");
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
@@ -451,11 +451,11 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.append(System.lineSeparator());
-		str.insert(0, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
+		str.insert(0, cnt.a == cnt.b ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.getFirst());
+		str.insert(0, cnt.a);
 		str.insert(0, '/');
-		str.insert(0, cnt.getSecond());
+		str.insert(0, cnt.b);
 		str.insert(0, "RESULT: ");
 		out.print(str);
 	}
@@ -481,7 +481,7 @@ public final class CheckResult {
 	 *           calling this method
 	 * @see #toString(StringBuilder, String, IntInt, int)
 	 */
-	public String toString(String name, IntInt counter, int indention) {
+	public String toString(String name, TwoInts counter, int indention) {
 		final char[] start;
 		final char[] doubleStart;
 		start = new char[indention];
@@ -489,7 +489,7 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		StringBuilder str = new StringBuilder();
-		IntIntImpl cnt = new IntIntImpl();
+		TwoInts cnt = new TwoInts();
 		this.results.forEach((m, r) -> {
 			boolean b = r.goodResult();
 			str.append(doubleStart).append(m.getName()).append('(');
@@ -501,9 +501,9 @@ public final class CheckResult {
 				str.append(',').append(params[i].getSimpleName());
 			}
 			str.append(')').append(" -> ");
-			cnt.incFirst();
+			cnt.a ++ ;
 			if (b) {
-				cnt.incSecond();
+				cnt.b ++ ;
 				;
 				if (m.getReturnType() == Void.TYPE) {
 					str.append("good");
@@ -518,16 +518,16 @@ public final class CheckResult {
 			str.append(System.lineSeparator());
 		});
 		str.insert(0, System.lineSeparator());
-		str.insert(0, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
+		str.insert(0, cnt.a == cnt.b ? "good" : "bad");
 		str.insert(0, " -> ");
-		str.insert(0, cnt.getFirst());
+		str.insert(0, cnt.a);
 		str.insert(0, '/');
-		str.insert(0, cnt.getSecond());
+		str.insert(0, cnt.b);
 		str.insert(0, ": ");
 		str.insert(0, name);
 		str.insert(0, start);
-		counter.addFirst(cnt.getFirst());
-		counter.addSecond(cnt.getSecond());
+		counter.a += cnt.a;
+		counter.b += cnt.b;
 		return str.toString();
 	}
 	
@@ -549,7 +549,7 @@ public final class CheckResult {
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 */
-	public void toString(StringBuilder builder, String name, IntInt counter, int indention) {
+	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
 		final char[] start;
 		final char[] doubleStart;
 		start = new char[indention];
@@ -557,7 +557,7 @@ public final class CheckResult {
 		doubleStart = new char[indention << 1];
 		Arrays.fill(doubleStart, ' ');
 		int startIndex = builder.length();
-		IntIntImpl cnt = new IntIntImpl();
+		TwoInts cnt = new TwoInts();
 		this.results.forEach((m, r) -> {
 			builder.append(doubleStart).append(m.getName()).append('(');
 			Class <?>[] params = m.getParameterTypes();
@@ -568,9 +568,9 @@ public final class CheckResult {
 				builder.append(',').append(params[i].getSimpleName());
 			}
 			builder.append(')').append(" -> ");
-			cnt.incFirst();
+			cnt.a ++ ;
 			if (r.goodResult()) {
-				cnt.incSecond();
+				cnt.b ++ ;
 				if (m.getReturnType() == Void.TYPE) {
 					builder.append("good");
 				} else {
@@ -584,16 +584,16 @@ public final class CheckResult {
 			builder.append(System.lineSeparator());
 		});
 		builder.insert(startIndex, System.lineSeparator());
-		builder.insert(startIndex, cnt.compareFirstWithSecond() == 0 ? "good" : "bad");
+		builder.insert(startIndex, cnt.a == cnt.b ? "good" : "bad");
 		builder.insert(startIndex, " -> ");
-		builder.insert(startIndex, cnt.getFirst());
+		builder.insert(startIndex, cnt.a);
 		builder.insert(startIndex, '/');
-		builder.insert(startIndex, cnt.getSecond());
+		builder.insert(startIndex, cnt.b);
 		builder.insert(startIndex, ": ");
 		builder.insert(startIndex, name);
 		builder.insert(startIndex, start);
-		counter.addFirst(cnt.getFirst());
-		counter.addSecond(cnt.getSecond());
+		counter.a += cnt.a;
+		counter.b += cnt.b;
 	}
 	
 }
