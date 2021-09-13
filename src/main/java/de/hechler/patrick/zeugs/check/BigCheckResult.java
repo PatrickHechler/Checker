@@ -1,5 +1,6 @@
 package de.hechler.patrick.zeugs.check;
 
+import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -12,30 +13,146 @@ public final class BigCheckResult {
 	
 	private Map <String, Class <?>>      classes = new HashMap <>();
 	private Map <Class <?>, CheckResult> results = new HashMap <>();
+	/**
+	 * the time when this {@link BigCheckResult} was created
+	 */
+	public final long                    start   = System.currentTimeMillis();
+	/**
+	 * the time when the {@link Checker} finished checking for this {@link BigCheckResult}.
+	 */
+	private long                         end;
 	
-	public CheckResult put(Class <?> cls, CheckResult result) {
+	
+	
+	/**
+	 * sets the end time of this {@link BigCheckResult}
+	 * 
+	 * @param end
+	 *            the end time
+	 */
+	void setEnd(long end) {
+		this.end = end;
+	}
+	
+	/**
+	 * returns the end time of this {@link BigCheckResult}
+	 * 
+	 * @return the end time of this {@link BigCheckResult}
+	 */
+	public long getEnd() {
+		return end;
+	}
+	
+	/**
+	 * returns the total time needed for this {@link BigCheckResult}
+	 * 
+	 * @return the total time needed for this {@link BigCheckResult}
+	 */
+	public long getTime() {
+		return end - start;
+	}
+	
+	/**
+	 * puts a {@link CheckResult} in the {@link #results} {@link Map} and the {@link Class} with it's name in the {@link #classes} {@link Map}
+	 * 
+	 * @param cls
+	 *            the class wich was checked
+	 * @param result
+	 *            the result which was created by checking the class
+	 * @return
+	 */
+	CheckResult put(Class <?> cls, CheckResult result) {
 		classes.put(cls.getName(), cls);
 		return results.put(cls, result);
 	}
 	
+	/**
+	 * returns the {@link CheckResult} which belongs to the given {@link Class} or <code>null</code> if there is no such {@link CheckResult} in the {@link #results}
+	 * 
+	 * @param cls
+	 *            the checked {@link Class}
+	 * @return the {@link CheckResult}
+	 */
 	public CheckResult get(Class <?> cls) {
 		return results.get(cls);
 	}
 	
+	/**
+	 * returns the {@link CheckResult} which belongs to the given {@link Class}, which is represented by it's full class name, or <code>null</code> if there is no matching {@link Class} in the
+	 * {@link #classes}.
+	 * 
+	 * @param fullClassName
+	 *            the full name of the checked class
+	 * @return the {@link CheckResult}
+	 * @see #get(Class)
+	 */
 	public CheckResult get(String fullClassName) {
 		Class <?> cls = classes.get(fullClassName);
+		if (cls == null) {
+			return null;
+		}
 		return results.get(cls);
 	}
 	
+	/**
+	 * returns <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and <code>false</code> if not.
+	 * 
+	 * @return <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and <code>false</code> if not
+	 * @see #wentUnexpected()
+	 */
+	public boolean wentExpected() {
+		for (CheckResult cr : results.values()) {
+			if (cr.wentUnexpected()) {
+				return false;
+			}
+		}
+		return true;
+	}
+	
+	/**
+	 * returns <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()} and <code>false</code> if not.
+	 * 
+	 * @return <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()} and <code>false</code> if not
+	 * @see #wentExpected()
+	 */
+	public boolean wentUnexpected() {
+		for (CheckResult cr : results.values()) {
+			if (cr.wentUnexpected()) {
+				return true;
+			}
+		}
+		return false;
+	}
+	
+	/**
+	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
+	 * 
+	 * @param cls
+	 *            the checked class
+	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
+	 */
 	public boolean wentExpected(Class <?> cls) {
 		return results.get(cls).wentExpected();
 	}
 	
+	/**
+	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
+	 * 
+	 * @param cls
+	 *            the checked class
+	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
+	 * @see #wentExpected(Class)
+	 */
 	public boolean wentExpected(String fullClassName) {
 		Class <?> cls = classes.get(fullClassName);
 		return results.get(cls).wentExpected();
 	}
 	
+	/**
+	 * returns a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected() unexpected}.
+	 * 
+	 * @return a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected() unexpected}
+	 */
 	public Map <Class <?>, CheckResult> allUnexpected() {
 		Map <Class <?>, CheckResult> ret = new HashMap <Class <?>, CheckResult>();
 		results.forEach((c, r) -> {
@@ -46,22 +163,47 @@ public final class BigCheckResult {
 		return ret;
 	}
 	
-	public void forAllCheckResults(BiConsumer <Class <?>, CheckResult> m) {
-		results.forEach(m);
+	/**
+	 * performs the given with all {@link CheckResult}s.
+	 * 
+	 * @param act
+	 *            the action to be performed
+	 * @see Map#forEach(BiConsumer)
+	 */
+	public void forAllCheckResults(BiConsumer <Class <?>, CheckResult> act) {
+		results.forEach(act);
 	}
 	
-	public void forAllUnexpectedCheckResults(BiConsumer <Class <?>, CheckResult> m) {
+	/**
+	 * performs the given with all {@link CheckResult}s, which went {@link CheckResult#wentUnexpected() unexpected}.
+	 * 
+	 * @param act
+	 *            the action to be performed
+	 */
+	public void forAllUnexpectedCheckResults(BiConsumer <Class <?>, CheckResult> act) {
 		results.forEach((c, r) -> {
 			if ( !r.wentExpected()) {
-				m.accept(c, r);
+				act.accept(c, r);
 			}
 		});
 	}
 	
+	/**
+	 * performs the given with all {@link Result}s.
+	 * 
+	 * @param act
+	 *            the action to be performed
+	 */
 	public void forAll(TriConsumer <Class <?>, Method, Result> tc) {
 		results.forEach((c, r) -> r.forAll((m, t) -> tc.accept(c, m, t)));
 	}
 	
+	/**
+	 * performs the given with all {@link Result}s, which went {@link Result#badResult() unexpected}.
+	 * 
+	 * @param act
+	 *            the action to be performed
+	 */
 	public void forAllUnexpected(TriConsumer <Class <?>, Method, Throwable> tc) {
 		results.forEach((c, r) -> r.forAllUnexpected((m, t) -> tc.accept(c, m, t)));
 	}
@@ -72,10 +214,22 @@ public final class BigCheckResult {
 		
 	}
 	
+	/**
+	 * returns a checked {@link Class} from the {@link #classes}, which has the given full class name or <code>null</code>.
+	 * 
+	 * @param fullClassName
+	 *            the full class name
+	 * @return a checked {@link Class} from the {@link #classes}, which has the given full class name or <code>null</code>
+	 */
 	public Class <?> getClass(String fullClassName) {
 		return classes.get(fullClassName);
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the {@link System#out} stream
+	 * 
+	 * @see #print(PrintStream)
+	 */
 	public void print() {
 		print(System.out);
 	}
@@ -86,7 +240,7 @@ public final class BigCheckResult {
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, 4));
 		});
-		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( ii.a == ii.b ? "good" : "bad"));
+		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + (ii.a == ii.b ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
 	
@@ -96,8 +250,16 @@ public final class BigCheckResult {
 		results.forEach((c, r) -> {
 			prints.add(r.toString(c.getSimpleName(), ii, indention));
 		});
-		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + ( ii.a == ii.b ? "good" : "bad"));
+		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + (ii.a == ii.b ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
+	}
+	
+	@Override
+	public String toString() {
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		print(new PrintStream(baos));
+		byte[] bytes = baos.toByteArray();
+		return new String(bytes);// default charset on both sides
 	}
 	
 }

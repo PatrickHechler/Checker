@@ -21,7 +21,44 @@ public final class Result {
 	 * if the method ended normally this value will be <code>null</code>
 	 */
 	private final Throwable err;
+	/**
+	 * the time when this {@link Result} was created
+	 */
+	private final long      start = System.currentTimeMillis();
+	/**
+	 * the time when the {@link Checker} finished checking for this {@link Result}.
+	 */
+	private long            end;
 	
+	
+	
+	/**
+	 * sets the end time of this {@link Result}
+	 * 
+	 * @param end
+	 *            the end time
+	 */
+	void setEnd(long end) {
+		this.end = end;
+	}
+	
+	/**
+	 * returns the end time of this {@link Result}
+	 * 
+	 * @return the end time of this {@link Result}
+	 */
+	public long getEnd() {
+		return end;
+	}
+	
+	/**
+	 * returns the total time needed for this {@link Result}
+	 * 
+	 * @return the total time needed for this {@link Result}
+	 */
+	public long getTime() {
+		return end - start;
+	}
 	
 	/**
 	 * creates a {@link Result} with the {@link Object} as return value of a {@link Method}

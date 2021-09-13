@@ -1211,10 +1211,12 @@ public class Checker implements Runnable {
 			this.end.forEach(r -> run(r, instance));
 		});
 		this.finalize.forEach(m -> run(m, instance));
+		this.result.setEnd(System.currentTimeMillis());
 	}
 	
 	
 	private static Result run(final Method m, Object invoker) {
+		Result retVal;
 		Parameter[] params = m.getParameters();
 		Object[] ps = new Object[params.length];
 		for (int i = 0; i < params.length; i ++ ) {
@@ -1262,7 +1264,7 @@ public class Checker implements Runnable {
 			m.setAccessible(true);
 			Object res = m.invoke(invoker, ps);
 			m.setAccessible(flag);
-			return new Result(res);
+			retVal = new Result(res);
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
@@ -1270,8 +1272,9 @@ public class Checker implements Runnable {
 				+ Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
 			Throwable err = e.getCause();
-			return new Result(err);
+			retVal = new Result(err);
 		}
+		return retVal;
 	}
 	
 	private void load(Class <?> clas) {
@@ -1369,8 +1372,11 @@ public class Checker implements Runnable {
 					else ps[i] = null;
 				}
 				Object instance = c.newInstance(ps);
-				if (instance instanceof Checker) return ((Checker) instance).result();
-				else return new Checker(instance).result();
+				if (instance instanceof Checker) {
+					return ((Checker) instance).result();
+				} else {
+					return new Checker(instance).result();
+				}
 			}
 			Constructor <?> c = cls.getConstructor();
 			s = c.getAnnotation(Start.class);
@@ -1429,6 +1435,7 @@ public class Checker implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	
@@ -1451,11 +1458,16 @@ public class Checker implements Runnable {
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) continue;
-				if (cc.disabled()) continue;
+				if (cc == null) {
+					continue;
+				}
+				if (cc.disabled()) {
+					continue;
+				}
 			}
 			bcr.put(cls, check(cls));
 		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	
@@ -1475,6 +1487,7 @@ public class Checker implements Runnable {
 				e.printStackTrace();
 			}
 		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	
@@ -1497,11 +1510,16 @@ public class Checker implements Runnable {
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) continue;
-				if (cc.disabled()) continue;
+				if (cc == null) {
+					continue;
+				}
+				if (cc.disabled()) {
+					continue;
+				}
 			}
 			bcr.put(cls, check(cls));
 		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	
@@ -1510,26 +1528,16 @@ public class Checker implements Runnable {
 		for (Class <?> cls : check) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) continue;
-				if (cc.disabled()) continue;
+				if (cc == null) {
+					continue;
+				}
+				if (cc.disabled()) {
+					continue;
+				}
 			}
 			bcr.put(cls, check(cls));
 		}
-		return bcr;
-	}
-	
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterable <Class <?>> check) {
-		BigCheckResult bcr = new BigCheckResult();
-		for (Class <?> cls : check) {
-			if (needEnabedCheckClass) {
-				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) continue;
-				if (cc.disabled()) continue;
-			}
-			
-			CheckResult cr = check(cls);
-			bcr.put(cls, cr);
-		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	
@@ -1539,13 +1547,18 @@ public class Checker implements Runnable {
 			Class <?> cls = check.next();
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) continue;
-				if (cc.disabled()) continue;
+				if (cc == null) {
+					continue;
+				}
+				if (cc.disabled()) {
+					continue;
+				}
 			}
 			
 			CheckResult cr = check(cls);
 			bcr.put(cls, cr);
 		}
+		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
 	}
 	

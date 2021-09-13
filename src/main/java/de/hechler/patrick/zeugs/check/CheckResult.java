@@ -26,8 +26,44 @@ public final class CheckResult {
 	 * this map contains all {@link Result} and the {@link Method}, from which the results are
 	 */
 	private Map <Method, Result> results = new HashMap <>();
+	/**
+	 * the time when this {@link CheckResult} was created
+	 */
+	private final long           start   = System.currentTimeMillis();
+	/**
+	 * the time when the {@link Checker} finished checking for this {@link CheckResult}.
+	 */
+	private long                 end;
+
 	
 	
+	/**
+	 * sets the end time of this {@link CheckResult}
+	 * 
+	 * @param end
+	 *            the end time
+	 */
+	void setEnd(long end) {
+		this.end = end;
+	}
+	
+	/**
+	 * returns the end time of this {@link CheckResult}
+	 * 
+	 * @return the end time of this {@link CheckResult}
+	 */
+	public long getEnd() {
+		return end;
+	}
+	
+	/**
+	 * returns the total time needed for this {@link CheckResult}
+	 * 
+	 * @return the total time needed for this {@link CheckResult}
+	 */
+	public long getTime() {
+		return end - start;
+	}
 	
 	/**
 	 * this method saves the {@link Result} with the {@link Method} in the {@link #results} and the method with its {@link Method#getName() name} (and {@link Method#getParameters() params}) in the
@@ -468,77 +504,6 @@ public final class CheckResult {
 	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
 	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
-	 * @param name
-	 *            the name of this {@link CheckResult}
-	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
-	 * @param indention
-	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
-	 * @return creates a detailed {@link String} representing this {@link CheckResult}
-	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, IntInt, int)
-	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params are the same as by
-	 *           calling this method
-	 * @see #toString(StringBuilder, String, IntInt, int)
-	 */
-	public String toString(String name, TwoInts counter, int indention) {
-		final char[] start;
-		final char[] doubleStart;
-		start = new char[indention];
-		Arrays.fill(start, ' ');
-		doubleStart = new char[indention << 1];
-		Arrays.fill(doubleStart, ' ');
-		StringBuilder str = new StringBuilder();
-		TwoInts cnt = new TwoInts();
-		this.results.forEach((m, r) -> {
-			boolean b = r.goodResult();
-			str.append(doubleStart).append(m.getName()).append('(');
-			Class <?>[] params = m.getParameterTypes();
-			if (params.length > 0) {
-				str.append(params[0].getSimpleName());
-			}
-			for (int i = 1; i < params.length; i ++ ) {
-				str.append(',').append(params[i].getSimpleName());
-			}
-			str.append(')').append(" -> ");
-			cnt.a ++ ;
-			if (b) {
-				cnt.b ++ ;
-				;
-				if (m.getReturnType() == Void.TYPE) {
-					str.append("good");
-				} else {
-					str.append("good: ");
-					str.append(r.getResult());
-				}
-			} else {
-				str.append("bad: ");
-				str.append(r.toSimpleString());
-			}
-			str.append(System.lineSeparator());
-		});
-		str.insert(0, System.lineSeparator());
-		str.insert(0, cnt.a == cnt.b ? "good" : "bad");
-		str.insert(0, " -> ");
-		str.insert(0, cnt.a);
-		str.insert(0, '/');
-		str.insert(0, cnt.b);
-		str.insert(0, ": ");
-		str.insert(0, name);
-		str.insert(0, start);
-		counter.a += cnt.a;
-		counter.b += cnt.b;
-		return str.toString();
-	}
-	
-	/**
-	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
-	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
-	 * 
-	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
-	 * 
 	 * @param builder
 	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
 	 * @param name
@@ -546,15 +511,17 @@ public final class CheckResult {
 	 * @param counter
 	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
 	 *            be added to {@link IntIntImpl#b b}
-	 * @param indention
-	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
+	 * @param classIndention
+	 *            the indention in spaces of this {@link CheckResult}
+	 * @param methodIndention
+	 *            the indention in spaces for the methods of this {@link CheckResult}
 	 */
-	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
+	public void toString(StringBuilder builder, String name, TwoInts counter, int classIndention, int methodIndention) {
 		final char[] start;
 		final char[] doubleStart;
-		start = new char[indention];
+		start = new char[classIndention];
 		Arrays.fill(start, ' ');
-		doubleStart = new char[indention << 1];
+		doubleStart = new char[methodIndention];
 		Arrays.fill(doubleStart, ' ');
 		int startIndex = builder.length();
 		TwoInts cnt = new TwoInts();
@@ -594,6 +561,62 @@ public final class CheckResult {
 		builder.insert(startIndex, start);
 		counter.a += cnt.a;
 		counter.b += cnt.b;
+	}
+	
+	/**
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
+	 * 
+	 * The given {@code counter} will be modified:<br>
+	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * 
+	 * @param builder
+	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
+	 * @param name
+	 *            the name of this {@link CheckResult}
+	 * @param counter
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link IntIntImpl#b b}
+	 * @param indention
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
+	 */
+	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
+		toString(builder, name, counter, indention, indention << 1);
+	}
+	
+	/**
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
+	 * 
+	 * The given {@code counter} will be modified:<br>
+	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * 
+	 * @param name
+	 *            the name of this {@link CheckResult}
+	 * @param counter
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
+	 *            be added to {@link IntIntImpl#b b}
+	 * @param indention
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
+	 * @return creates a detailed {@link String} representing this {@link CheckResult}
+	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, IntInt, int)
+	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params are the same as by
+	 *           calling this method
+	 * @see #toString(StringBuilder, String, IntInt, int)
+	 */
+	public String toString(String name, TwoInts counter, int indention) {
+		StringBuilder str = new StringBuilder();
+		toString(str, name, counter, indention);
+		return str.toString();
+	}
+	
+	@Override
+	public String toString() {
+		StringBuilder str = new StringBuilder();
+		toString(str, "<classname>", new TwoInts(), 0, 4);
+		return str.toString();
 	}
 	
 }
