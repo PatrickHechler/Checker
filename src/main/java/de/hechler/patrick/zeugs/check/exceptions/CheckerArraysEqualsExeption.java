@@ -15,6 +15,12 @@ public class CheckerArraysEqualsExeption extends CheckerException {
 		this.b = b;
 	}
 	
+	public CheckerArraysEqualsExeption(Object a, Object b, String msg) {
+		super(msg);
+		this.a = a;
+		this.b = b;
+	}
+	
 	private static String tos(Object arr) {
 		Class <?> c = arr.getClass();
 		if (c == long[].class) return Arrays.toString((long[]) arr);

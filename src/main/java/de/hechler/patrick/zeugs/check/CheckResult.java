@@ -501,16 +501,16 @@ public final class CheckResult {
 	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param builder
 	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link IntIntImpl#b b}
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link TwoInts#b b}
 	 * @param classIndention
 	 *            the indention in spaces of this {@link CheckResult}
 	 * @param methodIndention
@@ -564,28 +564,6 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
-	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
-	 * 
-	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
-	 * 
-	 * @param builder
-	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
-	 * @param name
-	 *            the name of this {@link CheckResult}
-	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link IntIntImpl#b b}
-	 * @param indention
-	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
-	 */
-	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
-		toString(builder, name, counter, indention, indention << 1);
-	}
-	
-	/**
 	 * prints a all unexpected results with their stack traces
 	 * 
 	 * this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code>
@@ -628,6 +606,7 @@ public final class CheckResult {
 				dindent = zw.toString();
 			}
 		}
+		out.print(indent + "time=" + (end - start) + "ms");
 		this.forAll((m, r) -> {
 			if (r.badResult()) {
 				r.detailedPrint(out, m, indent, dindent);
@@ -640,21 +619,43 @@ public final class CheckResult {
 	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * 
 	 * The given {@code counter} will be modified:<br>
-	 * {@link IntIntImpl#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
-	 * {@link IntIntImpl#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
+	 * 
+	 * @param builder
+	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
+	 * @param name
+	 *            the name of this {@link CheckResult}
+	 * @param counter
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link TwoInts#b b}
+	 * @param indention
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
+	 */
+	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
+		toString(builder, name, counter, indention, indention << 1);
+	}
+	
+	/**
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
+	 * 
+	 * The given {@code counter} will be modified:<br>
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link IntIntImpl#b b}
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link TwoInts#b b}
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
-	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, IntInt, int)
+	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, TwoInts, int)
 	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params
 	 *           are the same as by calling this method
-	 * @see #toString(StringBuilder, String, IntInt, int)
+	 * @see #toString(StringBuilder, String, TwoInts, int)
 	 */
 	public String toString(String name, TwoInts counter, int indention) {
 		StringBuilder str = new StringBuilder();

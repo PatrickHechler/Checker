@@ -138,7 +138,7 @@ public final class BigCheckResult {
 	/**
 	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
 	 * 
-	 * @param cls
+	 * @param fullClassName
 	 *            the checked class
 	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
 	 * @see #wentExpected(Class)
@@ -194,8 +194,8 @@ public final class BigCheckResult {
 	 * @param act
 	 *            the action to be performed
 	 */
-	public void forAll(TriConsumer <Class <?>, Method, Result> tc) {
-		results.forEach((c, r) -> r.forAll((m, t) -> tc.accept(c, m, t)));
+	public void forAll(TriConsumer <Class <?>, Method, Result> act) {
+		results.forEach((c, r) -> r.forAll((m, t) -> act.accept(c, m, t)));
 	}
 	
 	/**
@@ -204,8 +204,8 @@ public final class BigCheckResult {
 	 * @param act
 	 *            the action to be performed
 	 */
-	public void forAllUnexpected(TriConsumer <Class <?>, Method, Throwable> tc) {
-		results.forEach((c, r) -> r.forAllUnexpected((m, t) -> tc.accept(c, m, t)));
+	public void forAllUnexpected(TriConsumer <Class <?>, Method, Throwable> act) {
+		results.forEach((c, r) -> r.forAllUnexpected((m, t) -> act.accept(c, m, t)));
 	}
 	
 	public static interface TriConsumer <A, B, C> {
@@ -263,6 +263,7 @@ public final class BigCheckResult {
 	}
 	
 	public void detailedPrintUnexpected(PrintStream out, int indention, int doubleIndented) {
+		out.println("detailed big check result: time=" + (end - start) + "ms");
 		this.forAllUnexpectedCheckResults((cls, r) -> {
 			out.println("bad results in class " + cls.getName() + ':');
 			r.detailedPrintUnexpected(out, indention, doubleIndented);

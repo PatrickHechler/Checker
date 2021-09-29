@@ -209,6 +209,7 @@ public final class Result {
 				return;
 			}
 		}
+		out.println(indent + "time=" + (end - start) + "ms");
 		// err != null
 		Class <?> zwcls = err.getClass();
 		String cn = zwcls.getCanonicalName();
