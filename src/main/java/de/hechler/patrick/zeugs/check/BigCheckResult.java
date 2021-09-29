@@ -11,16 +11,16 @@ import java.util.function.BiConsumer;
 
 public final class BigCheckResult {
 	
-	private Map <String, Class <?>>      classes = new HashMap <>();
+	private Map <String, Class <?>> classes = new HashMap <>();
 	private Map <Class <?>, CheckResult> results = new HashMap <>();
 	/**
 	 * the time when this {@link BigCheckResult} was created
 	 */
-	public final long                    start   = System.currentTimeMillis();
+	public final long start = System.currentTimeMillis();
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link BigCheckResult}.
 	 */
-	private long                         end;
+	private long end;
 	
 	
 	
@@ -78,8 +78,8 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns the {@link CheckResult} which belongs to the given {@link Class}, which is represented by it's full class name, or <code>null</code> if there is no matching {@link Class} in the
-	 * {@link #classes}.
+	 * returns the {@link CheckResult} which belongs to the given {@link Class}, which is represented by it's full class name, or <code>null</code> if there is no matching
+	 * {@link Class} in the {@link #classes}.
 	 * 
 	 * @param fullClassName
 	 *            the full name of the checked class
@@ -253,6 +253,74 @@ public final class BigCheckResult {
 		out.println("RESULT: " + ii.b + '/' + ii.a + " -> " + (ii.a == ii.b ? "good" : "bad"));
 		prints.forEach(s -> out.print(s));
 	}
+	
+	public void detailedPrintUnexpected(PrintStream out) {
+		detailedPrintUnexpected(out, 4, 8);
+	}
+	
+	public void detailedPrintUnexpected(PrintStream out, int indention) {
+		detailedPrintUnexpected(out, indention, indention << 1);
+	}
+	
+	public void detailedPrintUnexpected(PrintStream out, int indention, int doubleIndented) {
+		this.forAllUnexpectedCheckResults((cls, r) -> {
+			out.println("bad results in class " + cls.getName() + ':');
+			r.detailedPrintUnexpected(out, indention, doubleIndented);
+		});
+	}
+	
+	// /**
+	// * prints all bad results in a detailed message on the {@link PrintStream} {@code out}
+	// *
+	// * @param out the {@link PrintStream} to be used
+	// * @param r the
+	// */
+	// private void detailedPrintBadResults(PrintStream out, CheckResult r) {
+	// r.forAllUnexpected((m, t) -> {
+	// out.print("\tchecked method: " + m.getName() + "(");
+	// Parameter[] params = m.getParameters();
+	// if (params.length > 0) {
+	// Annotation[] a = params[0].getAnnotations();
+	// for (int i = 0; i < a.length; i ++ ) {
+	// Class <? extends Annotation> acls = a[i].annotationType();
+	// out.print("@" + acls.getSimpleName() + ' ');
+	// }
+	// out.print(params[0].getType().getName());
+	// if (params[0].isNamePresent()) {
+	// out.print(" " + params[0].getName());
+	// }
+	// for (int i = 1; i < params.length; i ++ ) {
+	// out.print(", ");
+	// a = params[i].getAnnotations();
+	// for (int ii = 0; ii < a.length; ii ++ ) {
+	// Class <? extends Annotation> acls = a[ii].annotationType();
+	// out.print("@" + acls.getSimpleName() + ' ');
+	// }
+	// Class <?> type = params[i].getType();
+	// String cn = type.getCanonicalName();
+	// out.print(cn == null ? type.getName() : cn);
+	// if (params[i].isNamePresent()) {
+	// out.print(" " + params[i].getName());
+	// }
+	// }
+	// }
+	// Class <?> zwcls = m.getReturnType();
+	// String cn = zwcls.getCanonicalName();
+	// out.println(") -> should return " + (cn == null ? zwcls.getName() : cn));
+	// zwcls = t.getClass();
+	// cn = zwcls.getCanonicalName();
+	// out.println("\texception: " + (cn == null ? zwcls.getName() : cn));
+	// out.println("\tmessage: " + t.getMessage());
+	// out.println("\tlocalized message: " + t.getLocalizedMessage());
+	// out.println("\texeption to string: " + t.toString());
+	// out.println("\tstack trace:");
+	// StackTraceElement[] st = t.getStackTrace();
+	// for (int i = 0; i < st.length; i ++ ) {
+	// StackTraceElement ste = st[i];
+	// out.println("\t\tat " + ste.getClassName() + '.' + ste.getMethodName() + '(' + ste.getFileName() + ':' + ste.getLineNumber() + ')');
+	// }
+	// });
+	// }
 	
 	@Override
 	public String toString() {

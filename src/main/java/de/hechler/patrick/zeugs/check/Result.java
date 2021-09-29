@@ -1,6 +1,9 @@
 package de.hechler.patrick.zeugs.check;
 
+import java.io.PrintStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.Parameter;
 import java.util.NoSuchElementException;
 
 /**
@@ -15,7 +18,7 @@ public final class Result {
 	 * this saves the return value (or <code>null</code> if it was a <code>void</code> method)<br>
 	 * if the method did not end normally (it throwed an {@link Throwable}) this value will be <code>null</code>
 	 */
-	private final Object    result;
+	private final Object result;
 	/**
 	 * here will be the {@link Throwable} which was thrown by the called {@link Method}<br>
 	 * if the method ended normally this value will be <code>null</code>
@@ -24,11 +27,11 @@ public final class Result {
 	/**
 	 * the time when this {@link Result} was created
 	 */
-	private final long      start = System.currentTimeMillis();
+	private final long start = System.currentTimeMillis();
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link Result}.
 	 */
-	private long            end;
+	private long end;
 	
 	
 	
@@ -142,13 +145,93 @@ public final class Result {
 	}
 	
 	/**
+	 * prints a detailed represention of this {@link Result}, which contains even some informations which are not saved by this {@link Result} (then the information comes form the
+	 * {@link Method} {@code me}), when {@code me} is <code>null</code> these informations are skipped
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which this {@link Result} should be printed
+	 * @param me
+	 *            the {@link Method} of this {@link Result} with additional information. ignored if <code>null</code>
+	 * @param indent
+	 *            the normal indention
+	 * @param dindent
+	 *            the complete indention of double indented lines
+	 */
+	public void detailedPrint(PrintStream out, Method me, String indent, String dindent) {
+		if (me != null) {
+			out.print(indent + "checked method: " + me.getName() + "(");
+			Parameter[] params = me.getParameters();
+			if (params.length > 0) {
+				Annotation[] a = params[0].getAnnotations();
+				for (int i = 0; i < a.length; i ++ ) {
+					Class <? extends Annotation> acls = a[i].annotationType();
+					out.print("@" + acls.getSimpleName() + ' ');
+				}
+				out.print(params[0].getType().getName());
+				if (params[0].isNamePresent()) {
+					out.print(" " + params[0].getName());
+				}
+				for (int i = 1; i < params.length; i ++ ) {
+					out.print(", ");
+					a = params[i].getAnnotations();
+					for (int ii = 0; ii < a.length; ii ++ ) {
+						Class <? extends Annotation> acls = a[ii].annotationType();
+						out.print("@" + acls.getSimpleName() + ' ');
+					}
+					Class <?> type = params[i].getType();
+					String cn = type.getCanonicalName();
+					out.print(cn == null ? type.getName() : cn);
+					if (params[i].isNamePresent()) {
+						out.print(" " + params[i].getName());
+					}
+				}
+			}
+			Class <?> zwcls = me.getReturnType();
+			String cn = zwcls.getCanonicalName();
+			out.print(") -> ");
+			if (err == null) {
+				if (me.getReturnType() == Void.TYPE) {
+					out.println("void");
+				} else {
+					out.println("returned " + cn + ": " + result);
+				}
+				return;
+			} else {
+				out.println("should return " + cn);
+			}
+		} else {
+			if (err == null) {
+				if (result != null) {
+					out.println("returned void or null");
+				} else {
+					out.println("returned: " + result);
+				}
+				return;
+			}
+		}
+		// err != null
+		Class <?> zwcls = err.getClass();
+		String cn = zwcls.getCanonicalName();
+		out.println(indent + "exception: " + (cn == null ? zwcls.getName() : cn));
+		out.println(indent + "message: " + err.getMessage());
+		out.println(indent + "localized message: " + err.getLocalizedMessage());
+		out.println(indent + "exeption to string: " + err.toString());
+		out.println(indent + "stack trace:");
+		StackTraceElement[] st = err.getStackTrace();
+		for (int i = 0; i < st.length; i ++ ) {
+			StackTraceElement ste = st[i];
+			out.println(dindent + "at " + ste.getClassName() + '.' + ste.getMethodName() + '(' + ste.getFileName() + ':' + ste.getLineNumber() + ')');
+		}
+	}
+	
+	/**
 	 * this method returns a {@link String} with the {@link #err}or or {@link #result} of this {@link Result}. There will be no Prefix or Postfix
 	 * 
-	 * @return a {@link String} with the {@link #err}or or {@link #result} of this {@link Result} without any Prefix and without any Postfix
+	 * @return a {@link String} with the {@link #err} or {@link #result} of this {@link Result} without any Prefix or Postfix
 	 */
 	public String toSimpleString() {
 		if (err != null) {
-			return err.getClass().getName() + ':' + err.getMessage();
+			return err.toString();
 		} else if (result != null) {
 			return result.toString();
 		} else {

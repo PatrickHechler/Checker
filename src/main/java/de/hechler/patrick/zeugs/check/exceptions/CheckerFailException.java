@@ -10,4 +10,12 @@ public class CheckerFailException extends CheckerException {
 		super(msg);
 	}
 	
+	public CheckerFailException(String msg, Throwable cause) {
+		super(msg, cause);
+	}
+	
+	public CheckerFailException(Throwable cause) {
+		super(cause);
+	}
+	
 }

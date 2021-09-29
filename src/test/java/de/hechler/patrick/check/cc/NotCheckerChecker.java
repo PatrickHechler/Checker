@@ -160,7 +160,7 @@ public class NotCheckerChecker {
 	@Check()
 	public static void checkFail() {
 		System.out.println("    checkFail");
-		assertThrows(CheckerFailException.class, () -> fail(null));
+		assertThrows(CheckerFailException.class, () -> fail((String) null));
 		assertThrows(CheckerFailException.class, () -> fail(""));
 		assertThrows(CheckerFailException.class, () -> fail("fail"));
 	}

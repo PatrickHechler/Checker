@@ -4,7 +4,7 @@
     
     <groupId>de.hechler.patrick.hilfen</groupId>
     <artifactId>checker</artifactId>
-    <version>3.0.3-SNAPSHOT</version>
+    <version>4.0.0-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <properties>
@@ -18,7 +18,8 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <release>8</release>
+					<source>1.8</source>
+					<target>1.8</target>
                     <encoding>UTF-8</encoding>
                 </configuration>
             </plugin>

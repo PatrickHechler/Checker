@@ -37,11 +37,11 @@ public class Checker implements Runnable {
 	
 	private final Object instance;
 	
-	private List <Method> init     = null;
-	private List <Method> start    = null;
-	private List <Method> end      = null;
+	private List <Method> init = null;
+	private List <Method> start = null;
+	private List <Method> end = null;
 	private List <Method> finalize = null;
-	private List <Method> check    = null;
+	private List <Method> check = null;
 	
 	private CheckResult result;
 	
@@ -1181,7 +1181,15 @@ public class Checker implements Runnable {
 	}
 	
 	public static void fail() throws CheckerFailException {
-		throw new CheckerFailException("irgendetwas ist falsch");
+		throw new CheckerFailException("fail");
+	}
+	
+	public static void fail(Throwable cause) throws CheckerFailException {
+		throw new CheckerFailException(cause);
+	}
+	
+	public static void fail(String msg, Throwable cause) throws CheckerFailException {
+		throw new CheckerFailException(msg, cause);
 	}
 	
 	
@@ -1268,8 +1276,8 @@ public class Checker implements Runnable {
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
-			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes()) + "   ||| my params: {"
-				+ Arrays.deepToString(ps) + '}', e);
+			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
+					+ "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
 			Throwable err = e.getCause();
 			retVal = new Result(err);
@@ -1392,7 +1400,9 @@ public class Checker implements Runnable {
 					return new Checker(instance).result();
 				}
 			}
-		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException | ClassNotFoundException ignore) {}
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
+				| ClassNotFoundException ignore) {
+		}
 		Checker c = new Checker();
 		c.load(clas);
 		return c.result();
@@ -1412,7 +1422,8 @@ public class Checker implements Runnable {
 				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
 				Constructor <? extends Checker> c = cls.getConstructor();
 				return c.newInstance();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {}
+			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
+			}
 		}
 		Checker c = new Checker();
 		c.load(clas);

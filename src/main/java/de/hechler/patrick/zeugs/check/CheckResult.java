@@ -29,12 +29,12 @@ public final class CheckResult {
 	/**
 	 * the time when this {@link CheckResult} was created
 	 */
-	private final long           start   = System.currentTimeMillis();
+	private final long start = System.currentTimeMillis();
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link CheckResult}.
 	 */
-	private long                 end;
-
+	private long end;
+	
 	
 	
 	/**
@@ -66,16 +66,16 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * this method saves the {@link Result} with the {@link Method} in the {@link #results} and the method with its {@link Method#getName() name} (and {@link Method#getParameters() params}) in the
-	 * {@link #methods}.<br>
+	 * this method saves the {@link Result} with the {@link Method} in the {@link #results} and the method with its {@link Method#getName() name} (and {@link Method#getParameters()
+	 * params}) in the {@link #methods}.<br>
 	 * 
-	 * When the {@link Method} has no params (<code>{@link Method#getParameterCount()} == 0</code>) there will be two links created to the {@link Method} in {@link #methods}: one wit only the
-	 * {@link Method#getName() name} and one with the {@link Method#getName() name} and the braces '()'.<br>
+	 * When the {@link Method} has no params (<code>{@link Method#getParameterCount()} == 0</code>) there will be two links created to the {@link Method} in {@link #methods}: one
+	 * wit only the {@link Method#getName() name} and one with the {@link Method#getName() name} and the braces '()'.<br>
 	 * 
-	 * When the {@link Method} has params (<code>{@link Method#getParameterCount()} > 0</code>) there will be one link in the {@link #methods}: it will start with the {@link Method#getName() name} and
-	 * then the braces. between the braces will be the {@link Method#getParameters() params} with only their {@link Parameter#getType() type} as fully qualifying name. if a param is a
-	 * {@link Parameter#isVarArgs() varArg}, it will have '...' at the end and a second with '[]' at the end all other arrays will have only '[]' at the end. The {@link Method#getParameters() params}
-	 * will be separated by <code>', '</code>.
+	 * When the {@link Method} has params (<code>{@link Method#getParameterCount()} > 0</code>) there will be one link in the {@link #methods}: it will start with the
+	 * {@link Method#getName() name} and then the braces. between the braces will be the {@link Method#getParameters() params} with only their {@link Parameter#getType() type} as
+	 * fully qualifying name. if a param is a {@link Parameter#isVarArgs() varArg}, it will have '...' at the end and a second with '[]' at the end all other arrays will have only
+	 * '[]' at the end. The {@link Method#getParameters() params} will be separated by <code>', '</code>.
 	 * 
 	 * @param m
 	 * @param value
@@ -185,13 +185,13 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some), <code>false</code>
-	 * otherwise
+	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some),
+	 * <code>false</code> otherwise
 	 * 
 	 * @param mname
 	 *            the name of the {@link Method} and their potentially params
-	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some), <code>false</code>
-	 *         otherwise
+	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some),
+	 *         <code>false</code> otherwise
 	 */
 	public boolean checked(String mname) {
 		return this.methods.containsKey(mname);
@@ -241,8 +241,8 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * this method will return <code>true</code> if and only if all Checks went as {@link Result#goodResult() expected} (without any {@link Throwable} thrown). if at least one Check is
-	 * {@link Result#badResult() bad} this method will return <code>false</code>
+	 * this method will return <code>true</code> if and only if all Checks went as {@link Result#goodResult() expected} (without any {@link Throwable} thrown). if at least one
+	 * Check is {@link Result#badResult() bad} this method will return <code>false</code>
 	 * 
 	 * @return <code>true</code> if none of the {@link #results} is a {@link Result#badResult() bad Result}
 	 * @see #wentUnexpected()
@@ -255,8 +255,8 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Method} will be searched in the
-	 * {@link #methods} map. The {@link Result} will be searched in the {@link #results} map
+	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Method} will be searched
+	 * in the {@link #methods} map. The {@link Result} will be searched in the {@link #results} map
 	 * 
 	 * @param mname
 	 *            the name of the method to search in the {@link #methods}
@@ -276,8 +276,8 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Result} will be searched in the
-	 * {@link #results} map
+	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Result} will be searched
+	 * in the {@link #results} map
 	 * 
 	 * @param m
 	 *            the {@link Method} of which the {@link Result} is checked
@@ -509,8 +509,8 @@ public final class CheckResult {
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link IntIntImpl#b b}
 	 * @param classIndention
 	 *            the indention in spaces of this {@link CheckResult}
 	 * @param methodIndention
@@ -576,13 +576,63 @@ public final class CheckResult {
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link IntIntImpl#b b}
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 */
 	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
 		toString(builder, name, counter, indention, indention << 1);
+	}
+	
+	/**
+	 * prints a all unexpected results with their stack traces
+	 * 
+	 * this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code>
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
+	 * @param indention
+	 *            the normal indention
+	 * @see #detailedPrintUnexpected(PrintStream, int, int)
+	 */
+	public void detailedPrintUnexpected(PrintStream out, int indention) {
+		detailedPrintUnexpected(out, indention, indention << 1);
+	}
+	
+	/**
+	 * prints a all unexpected results with their stack traces
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
+	 * @param indention
+	 *            the normal indention
+	 * @param doubleIndented
+	 *            the complete indention for the doubled indented lines
+	 */
+	public void detailedPrintUnexpected(PrintStream out, int indention, int doubleIndented) {
+		String indent;
+		String dindent;
+		{
+			StringBuilder zw = new StringBuilder(Math.max(indention, doubleIndented));
+			for (int i = 0; i < indention; i ++ ) {
+				zw.append(' ');
+			}
+			indent = zw.toString();
+			for (int i = 0; i < doubleIndented; i ++ ) {
+				zw.append(' ');
+			}
+			if (doubleIndented < indention) {
+				dindent = indent.substring(indention - doubleIndented);
+			} else {
+				dindent = zw.toString();
+			}
+		}
+		this.forAll((m, r) -> {
+			if (r.badResult()) {
+				r.detailedPrint(out, m, indent, dindent);
+			}
+		});
 	}
 	
 	/**
@@ -596,14 +646,14 @@ public final class CheckResult {
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good Result} number will
-	 *            be added to {@link IntIntImpl#b b}
+	 *            the {@link IntIntImpl} will be changed as above specified: the {@link Result}number will be added to {@link IntIntImpl#a a} and the {@link Result#getResult() good
+	 *            Result} number will be added to {@link IntIntImpl#b b}
 	 * @param indention
 	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
 	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, IntInt, int)
-	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params are the same as by
-	 *           calling this method
+	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params
+	 *           are the same as by calling this method
 	 * @see #toString(StringBuilder, String, IntInt, int)
 	 */
 	public String toString(String name, TwoInts counter, int indention) {

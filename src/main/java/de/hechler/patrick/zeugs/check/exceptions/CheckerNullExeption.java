@@ -9,12 +9,12 @@ public class CheckerNullExeption extends CheckerException {
 	public String primType;
 	
 	public CheckerNullExeption() {
-		super("it was not null");
+		super("it was null");
 		primType = null;
 	}
 	
 	public CheckerNullExeption(String primType) {
-		super("it was not 0");
+		super("it was 0");
 		this.primType = primType;
 	}
 	
