@@ -14,7 +14,9 @@ import java.util.Objects;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.End;
+import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
+import de.hechler.patrick.zeugs.check.anotations.ResultParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysEqualsExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysNotEqualsExeption;
@@ -27,6 +29,7 @@ import de.hechler.patrick.zeugs.check.exceptions.CheckerNotEqualsExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNullExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotThrownException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNullExeption;
+import de.hechler.patrick.zeugs.check.exceptions.CreationError;
 import de.hechler.patrick.zeugs.check.interfaces.ThrowingRunnable;
 
 public class Checker implements Runnable {
@@ -1211,24 +1214,26 @@ public class Checker implements Runnable {
 			load(instance.getClass());
 		}
 		this.result = new CheckResult();
-		this.init.forEach(m -> run(m, instance));
+		this.init.forEach(m -> run(m, instance, null, null));
 		this.check.forEach(m -> {
-			this.start.forEach(r -> run(r, instance));
-			Result res = run(m, instance);
+			this.start.forEach(r -> run(r, instance, null, m));
+			Result res = run(m, instance, null, null);
 			this.result.set(m, res);
-			this.end.forEach(r -> run(r, instance));
+			this.end.forEach(r -> run(r, instance, res, m));
 		});
-		this.finalize.forEach(m -> run(m, instance));
+		this.finalize.forEach(m -> run(m, instance, null, null));
 		this.result.setEnd(System.currentTimeMillis());
 	}
 	
 	
-	private static Result run(final Method m, Object invoker) {
+	private static Result run(final Method m, Object invoker, Result checked, Method notRun) throws ClassCastException {
 		Result retVal;
 		Parameter[] params = m.getParameters();
 		Object[] ps = new Object[params.length];
 		for (int i = 0; i < params.length; i ++ ) {
 			ParamCreater pc = params[i].getAnnotation(ParamCreater.class);
+			MethodParam mp = params[i].getAnnotation(MethodParam.class);
+			ResultParam rp = params[i].getAnnotation(ResultParam.class);
 			Class <?> type = params[i].getType();
 			if (pc != null) {
 				String[] method = pc.method();
@@ -1248,12 +1253,22 @@ public class Checker implements Runnable {
 				}
 				boolean flag = met.isAccessible();
 				met.setAccessible(true);
-				Result r = run(met, invoker);
+				Result r = run(met, invoker, null, null);
 				if (r.badResult()) {
 					throw new InternalError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 				}
 				met.setAccessible(flag);
 				ps[i] = r.getResult();
+			} else if (rp != null) {
+				if ( !type.isAssignableFrom(Result.class)) {
+					throw new ClassCastException("can not cast from " + type.getCanonicalName() + " to " + Result.class.getCanonicalName());
+				}
+				ps[i] = checked;
+			} else if (mp != null) {
+				if ( !type.isAssignableFrom(Method.class)) {
+					throw new ClassCastException("can not cast from " + type.getCanonicalName() + " to " + Method.class.getCanonicalName());
+				}
+				ps[i] = notRun;
 			} else if (type.isPrimitive()) {
 				if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
 				else if (type == Integer.TYPE) ps[i] = 0;
@@ -1333,7 +1348,7 @@ public class Checker implements Runnable {
 	 * @return the result of the created {@link Checker}
 	 * @implNote it behaves like <code>{@link #generateChecker(Class)}.{@link #result()}</code>
 	 */
-	public static CheckResult check(final Class <?> clas) {
+	public static CheckResult check(final Class <?> clas) throws CreationError {
 		try {
 			Class <?> cls = clas;
 			Start s;
@@ -1358,22 +1373,20 @@ public class Checker implements Runnable {
 						Method met = clas.getDeclaredMethod(method[0], classes);
 						boolean flag = met.isAccessible();
 						met.setAccessible(true);
-						Result r = run(met, null);
+						Result r = run(met, null, null, null);
 						met.setAccessible(flag);
 						if (r.badResult()) {
-							CheckResult cr = new CheckResult();
-							cr.set(met, r);
-							return cr;
+							throw new CreationError(met, r);
 						}
 						ps[i] = r.getResult();
 					} else if (type.isPrimitive()) {
 						if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
-						else if (type == Integer.TYPE) ps[i] = 0;
-						else if (type == Double.TYPE) ps[i] = 0.0d;
-						else if (type == Character.TYPE) ps[i] = '\0';
+						else if (type == Integer.TYPE) ps[i] = (Integer) 0;
+						else if (type == Double.TYPE) ps[i] = (Double) 0.0d;
+						else if (type == Character.TYPE) ps[i] = (Character) '\0';
 						else if (type == Byte.TYPE) ps[i] = (Byte) (byte) 0;
-						else if (type == Long.TYPE) ps[i] = 0l;
-						else if (type == Float.TYPE) ps[i] = 0.0f;
+						else if (type == Long.TYPE) ps[i] = (Long) 0l;
+						else if (type == Float.TYPE) ps[i] = (Float) 0.0f;
 						else if (type == Short.TYPE) ps[i] = (Short) (short) 0;
 						else throw new InternalError("unknown primitiv param: '" + type + '\'');
 					} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type, 0);
@@ -1402,8 +1415,9 @@ public class Checker implements Runnable {
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| ClassNotFoundException ignore) {
+			//make with 'static' checker (error on instance methods)
 		}
-		Checker c = new Checker();
+		Checker c = new Checker(null);
 		c.load(clas);
 		return c.result();
 	}
