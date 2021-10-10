@@ -16,37 +16,37 @@ public class CheckerNotNullExeption extends CheckerException {
 		primType = false;
 	}
 
-	public CheckerNotNullExeption(byte a, Void v) {
+	public CheckerNotNullExeption(byte a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;
 	}
 	
-	public CheckerNotNullExeption(short a, Void v) {
+	public CheckerNotNullExeption(short a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;
 	}
 	
-	public CheckerNotNullExeption(int a, Void v) {
+	public CheckerNotNullExeption(int a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;
 	}
 	
-	public CheckerNotNullExeption(long a, Void v) {
+	public CheckerNotNullExeption(long a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;
 	}
 	
-	public CheckerNotNullExeption(double a, Void v) {
+	public CheckerNotNullExeption(double a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;
 	}
 	
-	public CheckerNotNullExeption(float a, Void v) {
+	public CheckerNotNullExeption(float a) {
 		super("'" + a + "' is not 0!");
 		notNull = a;
 		primType = true;

@@ -966,37 +966,37 @@ public class Checker implements Runnable {
 	
 	public static void assertNull(byte a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
 	public static void assertNull(short a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
 	public static void assertNull(int a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
 	public static void assertNull(long a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
 	public static void assertNull(float a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
 	public static void assertNull(double a) throws CheckerException {
 		if (a != 0) {
-			throw new CheckerNotNullExeption(a, null);
+			throw new CheckerNotNullExeption(a);
 		}
 	}
 	
@@ -1009,37 +1009,37 @@ public class Checker implements Runnable {
 	
 	public static void assertNotNull(byte a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("byte");
+			throw new CheckerNullExeption(Byte.TYPE);
 		}
 	}
 	
 	public static void assertNotNull(short a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("short");
+			throw new CheckerNullExeption(Short.TYPE);
 		}
 	}
 	
 	public static void assertNotNull(int a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("int");
+			throw new CheckerNullExeption(Integer.TYPE);
 		}
 	}
 	
 	public static void assertNotNull(long a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("long");
+			throw new CheckerNullExeption(Long.TYPE);
 		}
 	}
 	
 	public static void assertNotNull(float a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("float");
+			throw new CheckerNullExeption(Float.TYPE);
 		}
 	}
 	
 	public static void assertNotNull(double a) throws CheckerException {
 		if (a == 0) {
-			throw new CheckerNullExeption("double");
+			throw new CheckerNullExeption(Double.TYPE);
 		}
 	}
 	
@@ -1297,6 +1297,7 @@ public class Checker implements Runnable {
 			Throwable err = e.getCause();
 			retVal = new Result(err);
 		}
+		retVal.setEnd(System.currentTimeMillis());
 		return retVal;
 	}
 	

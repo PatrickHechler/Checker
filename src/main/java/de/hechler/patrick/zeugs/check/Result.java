@@ -31,7 +31,7 @@ public final class Result {
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link Result}.
 	 */
-	private long end;
+	private long end = -1L;
 	
 	
 	
