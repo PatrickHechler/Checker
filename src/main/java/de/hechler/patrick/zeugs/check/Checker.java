@@ -26,7 +26,13 @@ import de.hechler.patrick.zeugs.check.exceptions.CheckerException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNoInstanceException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotEqualsExeption;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotGreatherEqualExeption;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotGreatherExeption;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotLowerEqualException;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotLowerException;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNegativeException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNullExeption;
+import de.hechler.patrick.zeugs.check.exceptions.CheckerNotPositiveException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNotThrownException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerNullExeption;
 import de.hechler.patrick.zeugs.check.exceptions.CreationError;
@@ -958,6 +964,154 @@ public class Checker implements Runnable {
 	}
 	
 	
+	public static void assertLowerEqual(byte a, byte b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	public static void assertLowerEqual(short a, short b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	public static void assertLowerEqual(int a, int b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	public static void assertLowerEqual(long a, long b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	public static void assertLowerEqual(float a, float b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	public static void assertLowerEqual(double a, double b) throws CheckerException {
+		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+
+	public static void assertLower(byte a, byte b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	public static void assertLower(short a, short b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	public static void assertLower(int a, int b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	public static void assertLower(long a, long b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	public static void assertLower(float a, float b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	public static void assertLower(double a, double b) throws CheckerException {
+		if (a >= b) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
+	
+	public static void assertGreatherEqual(byte a, byte b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	public static void assertGreatherEqual(short a, short b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	public static void assertGreatherEqual(int a, int b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	public static void assertGreatherEqual(long a, long b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	public static void assertGreatherEqual(float a, float b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	public static void assertGreatherEqual(double a, double b) throws CheckerException {
+		if (a < b) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
+	
+	public static void assertGreather(byte a, byte b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	public static void assertGreather(short a, short b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	public static void assertGreather(int a, int b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	public static void assertGreather(long a, long b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	public static void assertGreather(float a, float b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	public static void assertGreather(double a, double b) throws CheckerException {
+		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	
 	public static void assertNull(Object a) throws CheckerException {
 		if (a != null) {
 			throw new CheckerNotNullExeption(a);
@@ -1040,6 +1194,78 @@ public class Checker implements Runnable {
 	public static void assertNotNull(double a) throws CheckerException {
 		if (a == 0) {
 			throw new CheckerNullExeption(Double.TYPE);
+		}
+	}
+	
+	public static void assertPositive(byte a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertPositive(short a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertPositive(int a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertPositive(long a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertPositive(float a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertPositive(double a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotPositiveException(a);
+		}
+	}
+	
+	public static void assertNegative(byte a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
+		}
+	}
+	
+	public static void assertNegative(short a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
+		}
+	}
+	
+	public static void assertNegative(int a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
+		}
+	}
+	
+	public static void assertNegative(long a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
+		}
+	}
+	
+	public static void assertNegative(float a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
+		}
+	}
+	
+	public static void assertNegative(double a) throws CheckerException {
+		if (a <= 0) {
+			throw new CheckerNotNegativeException(a);
 		}
 	}
 	
