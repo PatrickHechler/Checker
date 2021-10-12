@@ -606,7 +606,7 @@ public final class CheckResult {
 				dindent = zw.toString();
 			}
 		}
-		out.println(indent + "time=" + (end - start) + "ms");
+		out.println("time=" + (end - start) + "ms");
 		this.forAll((m, r) -> {
 			if (r.badResult()) {
 				r.detailedPrint(out, m, indent, dindent);

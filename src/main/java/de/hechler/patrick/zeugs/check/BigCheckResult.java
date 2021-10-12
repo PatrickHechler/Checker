@@ -265,7 +265,7 @@ public final class BigCheckResult {
 	public void detailedPrintUnexpected(PrintStream out, int indention, int doubleIndented) {
 		out.println("detailed big check result: time=" + (end - start) + "ms");
 		this.forAllUnexpectedCheckResults((cls, r) -> {
-			out.println("bad results in class " + cls.getName() + ':');
+			out.print("bad results in class " + cls.getName() + ": ");
 			r.detailedPrintUnexpected(out, indention, doubleIndented);
 		});
 	}
