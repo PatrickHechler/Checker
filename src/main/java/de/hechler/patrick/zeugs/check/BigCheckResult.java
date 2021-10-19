@@ -254,6 +254,27 @@ public final class BigCheckResult {
 		prints.forEach(s -> out.print(s));
 	}
 	
+	public void detailedPrint() {
+		detailedPrint(System.out, 4, 8);
+	}
+	
+	public void detailedPrint(PrintStream out) {
+		detailedPrint(out, 4, 8);
+	}
+	
+	public void detailedPrint(PrintStream out, int indention) {
+		detailedPrint(out, indention, indention << 1);
+	}
+	
+	public void detailedPrint(PrintStream out, int indention, int doubleIndented) {
+		out.println("detailed big check result: time=" + (end - start) + "ms");
+		this.forAllCheckResults((cls, r) -> {
+			out.print("results in class " + cls.getName() + ": ");
+			r.detailedPrint(out, indention, doubleIndented);
+		});
+	}
+	
+	
 	public void detailedPrintUnexpected(PrintStream out) {
 		detailedPrintUnexpected(out, 4, 8);
 	}

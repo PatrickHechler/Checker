@@ -808,13 +808,13 @@ public class Checker implements Runnable {
 	}
 	
 	public static void assertSimpleNotEquals(Object a, Object b) throws CheckerException {
-		if ( !Objects.equals(a, b)) {
+		if ( Objects.equals(a, b)) {
 			throw new CheckerEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertNotEquals(Object a, Object b) throws CheckerException {
-		if ( !Objects.deepEquals(a, b)) {
+		if ( Objects.deepEquals(a, b)) {
 			throw new CheckerEqualsExeption(a, b);
 		}
 	}
@@ -1508,22 +1508,25 @@ public class Checker implements Runnable {
 			} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type.getComponentType(), 0);
 			else ps[i] = null;
 		}
+		long start = System.currentTimeMillis();
 		try {
 			boolean flag = m.isAccessible();
 			m.setAccessible(true);
+			start = System.currentTimeMillis();
 			Object res = m.invoke(invoker, ps);
+			long end = System.currentTimeMillis();
 			m.setAccessible(flag);
-			retVal = new Result(res);
+			retVal = new Result(res, start, end);
 		} catch (IllegalAccessException e) {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
 			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
 					+ "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
+			long end = System.currentTimeMillis();
 			Throwable err = e.getCause();
-			retVal = new Result(err);
+			retVal = new Result(err, start, end);
 		}
-		retVal.setEnd(System.currentTimeMillis());
 		return retVal;
 	}
 	

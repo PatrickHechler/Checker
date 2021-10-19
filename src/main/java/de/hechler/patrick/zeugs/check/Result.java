@@ -25,34 +25,43 @@ public final class Result {
 	 */
 	private final Throwable err;
 	/**
-	 * the time when this {@link Result} was created
+	 * the time when this Check startet
 	 */
-	private final long start = System.currentTimeMillis();
+	private final long start;
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link Result}.
 	 */
-	private long end = -1L;
+	public final long end;
 	
 	
 	
 	/**
-	 * sets the end time of this {@link Result}
+	 * creates a {@link Result} with the {@link Object} as return value of a {@link Method}
 	 * 
-	 * @param end
-	 *            the end time
+	 * @param e
+	 *            the return value of the executed {@link Method}
 	 */
-	void setEnd(long end) {
+	public Result(Object e, long start, long end) {
+		this.result = e;
+		this.err = null;
+		this.start = start;
 		this.end = end;
 	}
 	
 	/**
-	 * returns the end time of this {@link Result}
+	 * creates a {@link Result} with the {@link Throwable} saved as error of a called {@link Method}
 	 * 
-	 * @return the end time of this {@link Result}
+	 * @param t
+	 *            the {@link Throwable} thrown while the {@link Method} was called
 	 */
-	public long getEnd() {
-		return end;
+	public Result(Throwable t, long start, long end) {
+		this.result = null;
+		this.err = t;
+		this.start = start;
+		this.end = end;
 	}
+	
+	
 	
 	/**
 	 * returns the total time needed for this {@link Result}
@@ -62,30 +71,6 @@ public final class Result {
 	public long getTime() {
 		return end - start;
 	}
-	
-	/**
-	 * creates a {@link Result} with the {@link Object} as return value of a {@link Method}
-	 * 
-	 * @param e
-	 *            the return value of the executed {@link Method}
-	 */
-	public Result(Object e) {
-		result = e;
-		err = null;
-	}
-	
-	/**
-	 * creates a {@link Result} with the {@link Throwable} saved as error of a called {@link Method}
-	 * 
-	 * @param t
-	 *            the {@link Throwable} thrown while the {@link Method} was called
-	 */
-	public Result(Throwable t) {
-		result = null;
-		err = t;
-	}
-	
-	
 	
 	/**
 	 * if this is a 'good' {@link Result} this {@link Method} will return <code>true</code>.<br>
@@ -195,6 +180,7 @@ public final class Result {
 				} else {
 					out.println("returned " + cn + ": " + result);
 				}
+				out.println(indent + "time=" + (end - start) + "ms");
 				return;
 			} else {
 				out.println("should return " + cn);
@@ -206,6 +192,7 @@ public final class Result {
 				} else {
 					out.println("returned: " + result);
 				}
+				out.println(dindent + "time=" + (end - start) + "ms");
 				return;
 			}
 		}

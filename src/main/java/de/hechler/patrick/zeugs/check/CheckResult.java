@@ -564,9 +564,65 @@ public final class CheckResult {
 	}
 	
 	/**
+	 * prints a all results in a detailed format
+	 * 
+	 * this just uses {@link #detailedPrint(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code><br>
+	 * 
+	 * the time will be in the first line, which will NOT be intended!
+	 * 
+
+	 * @param out
+	 *            the {@link PrintStream} on which the {@link Result}s should be printed
+	 * @param indention
+	 *            the normal indention
+	 * @see #detailedPrintUnexpected(PrintStream, int, int)
+	 */
+	public void detailedPrint(PrintStream out, int indention) {
+		detailedPrint(out, indention, indention << 1);
+	}
+	
+	/**
+	 * prints a all results in a detailed format<br>
+	 * 
+	 * the time will be in the first line, which will NOT be intended!
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which the {@link Result}s should be printed
+	 * @param indention
+	 *            the normal indention
+	 * @param doubleIndented
+	 *            the complete indention for the doubled indented lines
+	 */
+	public void detailedPrint(PrintStream out, int indention, int doubleIndented) {
+		String indent;
+		String dindent;
+		{
+			StringBuilder zw = new StringBuilder(Math.max(indention, doubleIndented));
+			for (int i = 0; i < indention; i ++ ) {
+				zw.append(' ');
+			}
+			indent = zw.toString();
+			for (int i = 0; i < doubleIndented; i ++ ) {
+				zw.append(' ');
+			}
+			if (doubleIndented < indention) {
+				dindent = indent.substring(indention - doubleIndented);
+			} else {
+				dindent = zw.toString();
+			}
+		}
+		out.println("time=" + (end - start) + "ms");
+		this.forAll((m, r) -> {
+			r.detailedPrint(out, m, indent, dindent);
+		});
+	}
+	
+	/**
 	 * prints a all unexpected results with their stack traces
 	 * 
-	 * this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code>
+	 * this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code><br>
+	 * 
+	 * the time will be in the first line, which will NOT be intended!
 	 * 
 	 * @param out
 	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
@@ -579,7 +635,9 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * prints a all unexpected results with their stack traces
+	 * prints a all unexpected results with their stack traces<br>
+	 * 
+	 * the time will be in the first line, which will NOT be intended!
 	 * 
 	 * @param out
 	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
