@@ -657,97 +657,97 @@ public class Checker implements Runnable {
 	}
 	
 	public static void assertEquals(Object a, boolean b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, char b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, long b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, int b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, short b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, byte b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, float b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(Object a, double b) throws CheckerException {
-		if ( !a.equals(b)) {
+		if (a == null || !a.equals(b)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(boolean a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(char a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(long a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(int a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(short a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(byte a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(float a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertEquals(double a, Object b) throws CheckerException {
-		if ( !b.equals(a)) {
+		if (b == null || !b.equals(a)) {
 			throw new CheckerNotEqualsExeption(a, b);
 		}
 	}
@@ -808,13 +808,13 @@ public class Checker implements Runnable {
 	}
 	
 	public static void assertSimpleNotEquals(Object a, Object b) throws CheckerException {
-		if ( Objects.equals(a, b)) {
+		if (Objects.equals(a, b)) {
 			throw new CheckerEqualsExeption(a, b);
 		}
 	}
 	
 	public static void assertNotEquals(Object a, Object b) throws CheckerException {
-		if ( Objects.deepEquals(a, b)) {
+		if (Objects.deepEquals(a, b)) {
 			throw new CheckerEqualsExeption(a, b);
 		}
 	}
@@ -1000,7 +1000,7 @@ public class Checker implements Runnable {
 		}
 	}
 	
-
+	
 	public static void assertLower(byte a, byte b) throws CheckerException {
 		if (a >= b) {
 			throw new CheckerNotLowerException(a, b);
@@ -1645,7 +1645,7 @@ public class Checker implements Runnable {
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
 				| ClassNotFoundException ignore) {
-			//make with 'static' checker (error on instance methods)
+			// make with 'static' checker (error on instance methods)
 		}
 		Checker c = new Checker(null);
 		c.load(clas);

@@ -9,8 +9,14 @@ public class CheckerNotEqualsExeption extends CheckerException {
 	public final Object a;
 	public final Object b;
 	
+	public CheckerNotEqualsExeption(Object a, Object b, String msg) {
+		super(msg);
+		this.a = a;
+		this.b = b;
+	}
+	
 	public CheckerNotEqualsExeption(Object a, Object b) {
-		super("'" +a + "' not equal '" + b + "'");
+		super("'" + a + "' not equal '" + b + "'");
 		this.a = a;
 		this.b = b;
 	}
