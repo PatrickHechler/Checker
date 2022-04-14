@@ -11,4 +11,11 @@ public @interface CheckClass {
 	
 	boolean disabled() default false;
 	
+	/**
+	 * <code>true</code> if the checks from the super class should be suppressed
+	 * 
+	 * @return <code>true</code> if the checks from the super class should be suppressed
+	 */
+	boolean disableSuper() default false;
+	
 }

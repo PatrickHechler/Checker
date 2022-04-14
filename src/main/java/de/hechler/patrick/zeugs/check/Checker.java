@@ -46,11 +46,11 @@ public class Checker implements Runnable {
 	
 	private final Object instance;
 	
-	private List <Method> init = null;
-	private List <Method> start = null;
-	private List <Method> end = null;
+	private List <Method> init     = null;
+	private List <Method> start    = null;
+	private List <Method> end      = null;
 	private List <Method> finalize = null;
-	private List <Method> check = null;
+	private List <Method> check    = null;
 	
 	private CheckResult result;
 	
@@ -1521,7 +1521,7 @@ public class Checker implements Runnable {
 			throw new AssertionError("can't acces method: " + m.getName(), e);
 		} catch (IllegalArgumentException e) {
 			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
-					+ "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
+				+ "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
 		} catch (InvocationTargetException e) {
 			long end = System.currentTimeMillis();
 			Throwable err = e.getCause();
@@ -1531,17 +1531,28 @@ public class Checker implements Runnable {
 	}
 	
 	private void load(Class <?> clas) {
-		try {
-			clas.getClassLoader().setClassAssertionStatus(clas.getCanonicalName(), true);
-		} catch (Throwable e) {// sollte eigentlich nicht passieren
-			e.printStackTrace();
-		}
-		Method[] methods = clas.getDeclaredMethods();
+		// try {
+		clas.getClassLoader().setClassAssertionStatus(clas.getCanonicalName(), true);
+		// } catch (Throwable e) { // sollte eigentlich nicht passieren
+		// e.printStackTrace();
+		// }
 		this.init = new ArrayList <>();
 		this.start = new ArrayList <>();
 		this.end = new ArrayList <>();
 		this.finalize = new ArrayList <>();
 		this.check = new ArrayList <>();
+		addMethods(clas.getDeclaredMethods());
+		CheckClass cc = clas.getAnnotation(CheckClass.class);
+		if (cc == null || !cc.disableSuper()) {
+			clas = clas.getSuperclass();
+			while (clas != null) {
+				addMethods(clas.getDeclaredMethods());
+				clas = clas.getSuperclass();
+			}
+		}
+	}
+	
+	private void addMethods(Method[] methods) {
 		for (Method m : methods) {
 			Start s = m.getAnnotation(Start.class);
 			if (s != null && !s.disabled()) {
@@ -1644,7 +1655,7 @@ public class Checker implements Runnable {
 				}
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-				| ClassNotFoundException ignore) {
+			| ClassNotFoundException ignore) {
 			// make with 'static' checker (error on instance methods)
 		}
 		Checker c = new Checker(null);
@@ -1666,8 +1677,7 @@ public class Checker implements Runnable {
 				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
 				Constructor <? extends Checker> c = cls.getConstructor();
 				return c.newInstance();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
-			}
+			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {}
 		}
 		Checker c = new Checker();
 		c.load(clas);
