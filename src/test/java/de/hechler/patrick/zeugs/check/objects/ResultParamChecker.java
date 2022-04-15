@@ -1,4 +1,4 @@
-package de.hechler.patrick.check.cc;
+package de.hechler.patrick.zeugs.check.objects;
 
 import de.hechler.patrick.zeugs.check.Assert;
 import de.hechler.patrick.zeugs.check.anotations.Check;

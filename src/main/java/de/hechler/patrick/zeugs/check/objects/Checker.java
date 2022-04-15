@@ -22,6 +22,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -33,8 +34,9 @@ import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ResultParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
+import de.hechler.patrick.zeugs.check.interfaces.TwoValues;
 
-public class Checker implements Runnable {
+public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	static {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
@@ -128,6 +130,21 @@ public class Checker implements Runnable {
 	 * @return the {@link #result} of this checker
 	 */
 	public final CheckResult result() {
+		if (result == null) {
+			run();
+		}
+		return result;
+	}
+	
+	/**
+	 * returns the {@link #result} of this checker.<br>
+	 * if the {@link #result} has not yet been generated the {@link #run()} method will be executed.
+	 * 
+	 * @return the {@link #result} of this checker
+	 * @see #result()
+	 */
+	@Override
+	public final CheckResult get() {
 		if (result == null) {
 			run();
 		}
@@ -401,6 +418,145 @@ public class Checker implements Runnable {
 		return c;
 	}
 	
+	/**
+	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
+	 * <p>
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
+	 * will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
+	 * {@link BigChecker}.
+	 * 
+	 * @param needCheckClass
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be
+	 *            {@link CheckClass#disabled()}.
+	 * @param classes
+	 *            the array containing the classes to check
+	 * @return the generated {@link BigChecker}
+	 */
+	public static BigChecker generateBigChecker(boolean needCheckClass, Class <?>... classes) {
+		Iterator <TwoValues <Class <?>, Checker>> iter = generateIterator(needCheckClass, classes);
+		return new BigChecker(iter);
+	}
+	
+	/**
+	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
+	 * <p>
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
+	 * will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
+	 * {@link BigChecker}.
+	 * <p>
+	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
+	 * checks.<br>
+	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
+	 * the Multithreading.<br>
+	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
+	 * calling threads of the {@link BigChecker#run()}.<br>
+	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
+	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
+	 * {@link IllegalArgumentException} will be thrown.
+	 * 
+	 * @param needCheckClass
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be
+	 *            {@link CheckClass#disabled()}.
+	 * @param maxWorkers
+	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
+	 *            when all checks should be executed in the same thread.
+	 * @param classes
+	 *            the array containing the classes to check
+	 * @return the generated {@link BigChecker}
+	 */
+	public static BigChecker generateBigChecker(boolean needCheckClass, int maxWorkers, Class <?>... classes) {
+		if (maxWorkers < -1) {
+			throw new IllegalArgumentException("max workers < -1 maxWorkers=" + maxWorkers);
+		}
+		Iterator <TwoValues <Class <?>, Checker>> iter = generateIterator(needCheckClass, classes);
+		return new BigChecker(iter, maxWorkers);
+	}
+	
+	/**
+	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
+	 * <p>
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
+	 * will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
+	 * {@link BigChecker}.
+	 * 
+	 * @param needCheckClass
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be
+	 *            {@link CheckClass#disabled()}.
+	 * @param classes
+	 *            the iterator containing the classes to check
+	 * @return the generated {@link BigChecker}
+	 */
+	public static BigChecker generateBigChecker(boolean needCheckClass, Iterator <Class <?>> classes) {
+		Iterator <TwoValues <Class <?>, Checker>> iter = getIterator(needCheckClass, classes);
+		return new BigChecker(iter);
+	}
+	
+	/**
+	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
+	 * <p>
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
+	 * will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
+	 * {@link BigChecker}.
+	 * <p>
+	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
+	 * checks.<br>
+	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
+	 * the Multithreading.<br>
+	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
+	 * calling threads of the {@link BigChecker#run()}.<br>
+	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
+	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
+	 * {@link IllegalArgumentException} will be thrown.
+	 * 
+	 * @param needCheckClass
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be
+	 *            {@link CheckClass#disabled()}.
+	 * @param maxWorkers
+	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
+	 *            when all checks should be executed in the same thread.
+	 * @param classes
+	 *            the iterator containing the classes to check
+	 * @return the generated {@link BigChecker}
+	 */
+	public static BigChecker generateBigChecker(boolean needCheckClass, int maxWorkers, Iterator <Class <?>> classes) {
+		Iterator <TwoValues <Class <?>, Checker>> iter = getIterator(needCheckClass, classes);
+		return new BigChecker(iter, maxWorkers);
+	}
+	
+	private static Iterator <TwoValues <Class <?>, Checker>> generateIterator(boolean needCheckClass, Class <?>... classes) {
+		if (needCheckClass) {
+			return new CheckerIterator(new ArrayIterator <>(classes));
+		} else {
+			return new ArrayFunctionIterator <>(classes, cls -> new TwoValuesImpl <>(cls, generateChecker(cls)));
+		}
+	}
+	
+	private static Iterator <TwoValues <Class <?>, Checker>> getIterator(boolean needCheckClass, Iterator <Class <?>> classes) {
+		if (needCheckClass) {
+			return new CheckerIterator(classes);
+		} else {
+			return new Iterator <TwoValues <Class <?>, Checker>>() {
+				
+				@Override
+				public boolean hasNext() {
+					return classes.hasNext();
+				}
+				
+				@Override
+				public TwoValues <Class <?>, Checker> next() {
+					Class <?> cls = classes.next();
+					Checker checker = generateChecker(cls);
+					return new TwoValuesImpl <Class <?>, Checker>(cls, checker);
+				}
+				
+			};
+		}
+	}
+	
 	private static <T> T createInstance(final Class <T> clas)
 			throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		Object firstParam = null;
@@ -474,7 +630,7 @@ public class Checker implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		bcr.setEnd(System.currentTimeMillis());
+		bcr.setEnd();
 		return bcr;
 	}
 	
@@ -506,7 +662,7 @@ public class Checker implements Runnable {
 				e.printStackTrace();
 			}
 		}
-		bcr.setEnd(System.currentTimeMillis());
+		bcr.setEnd();
 		return bcr;
 	}
 	
@@ -535,7 +691,7 @@ public class Checker implements Runnable {
 			}
 			bcr.put(cls, check(cls));
 		}
-		bcr.setEnd(System.currentTimeMillis());
+		bcr.setEnd();
 		return bcr;
 	}
 	
@@ -566,7 +722,7 @@ public class Checker implements Runnable {
 			CheckResult cr = check(cls);
 			bcr.put(cls, cr);
 		}
-		bcr.setEnd(System.currentTimeMillis());
+		bcr.setEnd();
 		return bcr;
 	}
 	
@@ -671,7 +827,8 @@ public class Checker implements Runnable {
 	}
 	
 	/**
-	 * Scans all class-loaders for the current thread for loaded jars, and then scans
+	 * orig description:<br>
+	 * Scans all classloaders for the current thread for loaded jars, and then scans
 	 * each jar for the package name in question, listing all classes directly under
 	 * the package name in question. Assumes directory structure in jar file and class
 	 * package naming follow java conventions (i.e. com.example.test.MyTest would be in
@@ -705,30 +862,29 @@ public class Checker implements Runnable {
 	 * @see https://creativecommons.org/licenses/by-sa/2.5/legalcode
 	 */
 	public static Set <Class <?>> tryGetClassesForPackage(String packageName, boolean allowSubPackages, ClassLoader loader, boolean bailError) {
-		String packagePath = packageName.replace(".", "/");
 		Set <URL> jarUrls = new HashSet <URL>();
 		Set <Path> directorys = new HashSet <Path>();
-		
 		findClassPools(loader, jarUrls, directorys, bailError);
-		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packagePath, jarUrls, directorys, loader, bailError);
-		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packagePath, directorys, loader, bailError);
+		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packageName, jarUrls, directorys, loader, bailError);
+		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packageName, directorys, loader, bailError);
 		jarClasses.addAll(dirClasses);
 		return jarClasses;
 	}
 	
-	private static Set <Class <?>> findDirClasses(boolean subPackages, String packagePath, Set <Path> directorys, ClassLoader loader, boolean bailError) {
+	private static Set <Class <?>> findDirClasses(boolean subPackages, String packageName, Set <Path> directorys, ClassLoader loader, boolean bailError) {
 		Filter <Path> filter;
 		Set <Class <?>> result = new HashSet <>();
-		for (Path up : directorys) {
-			final Path path = up.toAbsolutePath();
+		for (Path startPath : directorys) {
+			String packagePath = packageName.replace(".", startPath.getFileSystem().getSeparator());
+			final Path searchPath = startPath.resolve(packagePath).toAbsolutePath();
 			if (subPackages) {
 				filter = p -> {
 					p = p.toAbsolutePath();
 					Path other;
-					if (p.getNameCount() >= path.getNameCount()) {
-						other = path;
+					if (p.getNameCount() >= searchPath.getNameCount()) {
+						other = searchPath;
 					} else {
-						other = path.subpath(0, p.getNameCount());
+						other = searchPath.subpath(0, p.getNameCount());
 					}
 					if (p.startsWith(other)) {
 						return true;
@@ -739,16 +895,18 @@ public class Checker implements Runnable {
 			} else {
 				filter = p -> {
 					p = p.toAbsolutePath();
-					if (p.getNameCount() > path.getNameCount() + 1) {
-						return false;//TODO
-					} else if (p.toAbsolutePath().startsWith(path)) {
+					if (p.getNameCount() > searchPath.getNameCount() + 1) {
+						return false;
+					} else if (p.toAbsolutePath().startsWith(searchPath)) {
 						return true;
 					} else {
 						return false;
 					}
 				};
 			}
-			findDirClassFilesRecursive(filter, path, path, result, loader, bailError);
+			if (Files.exists(searchPath)) {
+				findDirClassFilesRecursive(filter, searchPath, startPath, result, loader, bailError);
+			} // the package does not have to exist in every directory
 		}
 		return result;
 	}
@@ -789,7 +947,8 @@ public class Checker implements Runnable {
 		}
 	}
 	
-	private static Set <Class <?>> findJarClasses(boolean subPackages, String packagePath, Set <URL> nextJarUrls, Set <Path> directories, ClassLoader loader, boolean bailError) {
+	private static Set <Class <?>> findJarClasses(boolean subPackages, String packageName, Set <URL> nextJarUrls, Set <Path> directories, ClassLoader loader, boolean bailError) {
+		String packagePath = packageName.replace('.', '/');
 		Set <Class <?>> result = new HashSet <>();
 		Set <URL> allJarUrls = new HashSet <>();
 		while (true) {
@@ -803,9 +962,7 @@ public class Checker implements Runnable {
 				try (JarInputStream stream = new JarInputStream(url.openStream())) {
 					// may want better way to open url connections
 					readJarClassPath(stream, nextJarUrls, directories, bailError);
-					
 					JarEntry entry = stream.getNextJarEntry();
-					
 					while (entry != null) {
 						String name = entry.getName();
 						int i = name.lastIndexOf("/");
@@ -839,38 +996,37 @@ public class Checker implements Runnable {
 	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories, boolean bailError) {
 		Object classPathObj = stream.getManifest().getMainAttributes().get(new Name("Class-Path"));
 		if (classPathObj == null) {
-			classPathObj = stream.getManifest().getMainAttributes().get("Class-Path");
+			return;
 		}
-		// class path is space separated. (paths with space become URL like '%20')
 		if (classPathObj instanceof String) {
-			String[] entries = ((String) classPathObj).split("\\s+");
+			String[] entries = ((String) classPathObj).split("\\s+");// should also work with a single space (" ")
 			for (String entry : entries) {
 				try {
 					URL url = new URL(entry);
-					addUrl(jarUrls, directories, url, bailError);
+					addFromUrl(jarUrls, directories, url, bailError);
 				} catch (MalformedURLException e) {
 					e.printStackTrace();
 				}
 			}
+		} else if (bailError) {
+			throw new RuntimeException("the Class-Path attribute is no String: " + classPathObj.getClass().getName() + " tos='" + classPathObj + "'");
 		}
-		// System.out.println("[findJarClassses]: jar-stream.main-attrs.Name(Class-Path): " + classPath);
 	}
 	
 	private static void findClassPools(ClassLoader classLoader, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError) {
 		while (classLoader != null) {
 			if (classLoader instanceof URLClassLoader) {
 				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
-					addUrl(jarUrls, directoryPaths, url, bailError);
+					addFromUrl(jarUrls, directoryPaths, url, bailError);
 				}
-			} else {
-				// System.err.println("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
+			} else if (bailError) {
+				throw new RuntimeException("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
 			}
 			classLoader = classLoader.getParent();
 		}
 	}
 	
-	private static void addUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
-		// System.out.println("[findClassPools]: url: " + url);
+	private static void addFromUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
 		if (url.getFile().endsWith(".jar") || url.getFile().endsWith(".zip")) {
 			// may want better way to detect jar files
 			jarUrls.add(url);

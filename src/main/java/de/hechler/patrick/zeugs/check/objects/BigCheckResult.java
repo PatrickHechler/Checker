@@ -18,20 +18,18 @@ public final class BigCheckResult {
 	 */
 	public final long start = System.currentTimeMillis();
 	/**
-	 * the time when the {@link Checker} finished checking for this {@link BigCheckResult}.
+	 * the time when all {@link Checker} objects finished checking for this {@link BigCheckResult}.
 	 */
 	private long end;
 	
 	
 	
 	/**
-	 * sets the end time of this {@link BigCheckResult}
+	 * sets the end time of this {@link BigCheckResult} to {@link System#currentTimeMillis()}
 	 * 
-	 * @param end
-	 *            the end time
 	 */
-	void setEnd(long end) {
-		this.end = end;
+	void setEnd() {
+		this.end = System.currentTimeMillis();
 	}
 	
 	/**
@@ -291,58 +289,9 @@ public final class BigCheckResult {
 		});
 	}
 	
-	// /**
-	// * prints all bad results in a detailed message on the {@link PrintStream} {@code out}
-	// *
-	// * @param out the {@link PrintStream} to be used
-	// * @param r the
-	// */
-	// private void detailedPrintBadResults(PrintStream out, CheckResult r) {
-	// r.forAllUnexpected((m, t) -> {
-	// out.print("\tchecked method: " + m.getName() + "(");
-	// Parameter[] params = m.getParameters();
-	// if (params.length > 0) {
-	// Annotation[] a = params[0].getAnnotations();
-	// for (int i = 0; i < a.length; i ++ ) {
-	// Class <? extends Annotation> acls = a[i].annotationType();
-	// out.print("@" + acls.getSimpleName() + ' ');
-	// }
-	// out.print(params[0].getType().getName());
-	// if (params[0].isNamePresent()) {
-	// out.print(" " + params[0].getName());
-	// }
-	// for (int i = 1; i < params.length; i ++ ) {
-	// out.print(", ");
-	// a = params[i].getAnnotations();
-	// for (int ii = 0; ii < a.length; ii ++ ) {
-	// Class <? extends Annotation> acls = a[ii].annotationType();
-	// out.print("@" + acls.getSimpleName() + ' ');
-	// }
-	// Class <?> type = params[i].getType();
-	// String cn = type.getCanonicalName();
-	// out.print(cn == null ? type.getName() : cn);
-	// if (params[i].isNamePresent()) {
-	// out.print(" " + params[i].getName());
-	// }
-	// }
-	// }
-	// Class <?> zwcls = m.getReturnType();
-	// String cn = zwcls.getCanonicalName();
-	// out.println(") -> should return " + (cn == null ? zwcls.getName() : cn));
-	// zwcls = t.getClass();
-	// cn = zwcls.getCanonicalName();
-	// out.println("\texception: " + (cn == null ? zwcls.getName() : cn));
-	// out.println("\tmessage: " + t.getMessage());
-	// out.println("\tlocalized message: " + t.getLocalizedMessage());
-	// out.println("\texeption to string: " + t.toString());
-	// out.println("\tstack trace:");
-	// StackTraceElement[] st = t.getStackTrace();
-	// for (int i = 0; i < st.length; i ++ ) {
-	// StackTraceElement ste = st[i];
-	// out.println("\t\tat " + ste.getClassName() + '.' + ste.getMethodName() + '(' + ste.getFileName() + ':' + ste.getLineNumber() + ')');
-	// }
-	// });
-	// }
+	public int checkedResultCount() {
+		return this.results.size();
+	}
 	
 	@Override
 	public String toString() {

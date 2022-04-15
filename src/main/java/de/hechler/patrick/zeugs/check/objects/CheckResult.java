@@ -11,7 +11,9 @@ import java.util.function.BiConsumer;
 
 /**
  * this class saves the {@link Result}s of a {@link Checker}.<br>
- * The {@link Result}s are accessible with the {@link Method}s or
+ * The {@link Result} of each checked {@link Method} is accessible with the
+ * {@link #getResult(Method)} method<p>
+ * 
  * 
  * @author Patrick
  */
@@ -28,7 +30,7 @@ public final class CheckResult {
 	/**
 	 * the time when this {@link CheckResult} was created
 	 */
-	private final long start = System.currentTimeMillis();
+	public final long start = System.currentTimeMillis();
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link CheckResult}.
 	 */
@@ -180,7 +182,7 @@ public final class CheckResult {
 	 * @return the {@link Result} from the {@link #results} by the {@link Method}
 	 * @throws NoSuchElementException
 	 *             if there is no {@link Result} in the {@link #results} for the {@link Method}
-	 * @see {@link #getResult(String)}
+	 * @see #getResult(String)
 	 */
 	public Result getResult(Method m) throws NoSuchElementException {
 		Result res = results.get(m);

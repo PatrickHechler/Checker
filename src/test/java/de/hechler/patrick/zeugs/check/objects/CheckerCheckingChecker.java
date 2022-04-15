@@ -1,4 +1,4 @@
-package de.hechler.patrick.check.cc;
+package de.hechler.patrick.zeugs.check.objects;
 
 import static de.hechler.patrick.zeugs.check.Assert.assertEquals;
 import static de.hechler.patrick.zeugs.check.Assert.assertFalse;
@@ -11,8 +11,6 @@ import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
-import de.hechler.patrick.zeugs.check.objects.CheckResult;
-import de.hechler.patrick.zeugs.check.objects.Checker;
 
 @CheckClass
 public class CheckerCheckingChecker extends Checker {

@@ -1,4 +1,4 @@
-package de.hechler.patrick.check.cc;
+package de.hechler.patrick.zeugs.check.objects;
 
 import static de.hechler.patrick.zeugs.check.Assert.assertArrayEquals;
 import static de.hechler.patrick.zeugs.check.Assert.assertEquals;

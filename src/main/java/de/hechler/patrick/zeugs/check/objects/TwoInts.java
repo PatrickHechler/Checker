@@ -1,7 +1,7 @@
 package de.hechler.patrick.zeugs.check.objects;
 
 
-public class TwoInts {
+public final class TwoInts {
 	
 	public int a;
 	public int b;

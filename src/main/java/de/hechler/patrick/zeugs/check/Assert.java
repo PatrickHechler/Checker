@@ -24,8 +24,14 @@ import de.hechler.patrick.zeugs.check.interfaces.ThrowingRunnable;
 
 public interface Assert {
 	
-	static void assertNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
+	static void assertDeepNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if (Arrays.deepEquals(a, b)) {
+			throw new CheckerArraysEqualsExeption(a, b);
+		}
+	}
+	
+	static void assertNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
+		if (Arrays.equals(a, b)) {
 			throw new CheckerArraysEqualsExeption(a, b);
 		}
 	}
@@ -288,6 +294,12 @@ public interface Assert {
 	
 	
 	static void assertArrayEquals(Object[] a, Object[] b) throws CheckerException {
+		if ( !Arrays.equals(a, b)) {
+			throw new CheckerArraysNotEqualsExeption(a, b);
+		}
+	}
+	
+	static void assertDeepArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if ( !Arrays.deepEquals(a, b)) {
 			throw new CheckerArraysNotEqualsExeption(a, b);
 		}

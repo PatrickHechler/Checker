@@ -1,10 +1,8 @@
-package de.hechler.patrick.check.cc;
+package de.hechler.patrick.zeugs.check.objects;
 
 import de.hechler.patrick.zeugs.check.Assert;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
-import de.hechler.patrick.zeugs.check.objects.Checker;
-import de.hechler.patrick.zeugs.check.objects.Result;
 
 
 @CheckClass

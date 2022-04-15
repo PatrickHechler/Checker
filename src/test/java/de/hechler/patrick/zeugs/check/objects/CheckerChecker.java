@@ -1,4 +1,4 @@
-package de.hechler.patrick.check.cc;
+package de.hechler.patrick.zeugs.check.objects;
 
 import static de.hechler.patrick.zeugs.check.Assert.assertArrayEquals;
 import static de.hechler.patrick.zeugs.check.Assert.assertEquals;
@@ -12,7 +12,6 @@ import de.hechler.patrick.zeugs.check.anotations.End;
 import de.hechler.patrick.zeugs.check.anotations.Start;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
-import de.hechler.patrick.zeugs.check.objects.Checker;
 
 @CheckClass
 public class CheckerChecker extends Checker {
