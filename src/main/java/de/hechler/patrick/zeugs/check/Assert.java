@@ -1100,9 +1100,29 @@ public interface Assert {
 	}
 	
 	
+	static <T> T castNotNull(Object a, Class <T> type, String msg) throws CheckerException {
+		if (a == null) {
+			throw new CheckerNullExeption(msg, type);
+		}
+		return type.cast(a);
+	}
+	
+	static <T> T castNotNull(Object a, Class <T> type) throws CheckerException {
+		if (a == null) {
+			throw new CheckerNullExeption(type);
+		}
+		return type.cast(a);
+	}
+	
+	static void assertNotNull(Object a, String msg) throws CheckerException {
+		if (a == null) {
+			throw new CheckerNullExeption(msg, Object.class);
+		}
+	}
+	
 	static void assertNotNull(Object a) throws CheckerException {
 		if (a == null) {
-			throw new CheckerNullExeption();
+			throw new CheckerNullExeption(Object.class);
 		}
 	}
 	

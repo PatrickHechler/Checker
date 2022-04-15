@@ -7,9 +7,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.lang.reflect.Method;
 
-import de.hechler.patrick.zeugs.check.BigCheckResult;
-import de.hechler.patrick.zeugs.check.CheckResult;
-import de.hechler.patrick.zeugs.check.Result;
+import de.hechler.patrick.zeugs.check.objects.BigCheckResult;
+import de.hechler.patrick.zeugs.check.objects.CheckResult;
+import de.hechler.patrick.zeugs.check.objects.Result;
 
 /**
  * this annotation is used to tell the checker which methods should be executed as checks.<br>

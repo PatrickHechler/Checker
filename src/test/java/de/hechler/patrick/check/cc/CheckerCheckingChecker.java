@@ -7,12 +7,12 @@ import static de.hechler.patrick.zeugs.check.Assert.assertTrue;
 
 import java.lang.reflect.Method;
 
-import de.hechler.patrick.zeugs.check.CheckResult;
-import de.hechler.patrick.zeugs.check.Checker;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
+import de.hechler.patrick.zeugs.check.objects.CheckResult;
+import de.hechler.patrick.zeugs.check.objects.Checker;
 
 @CheckClass
 public class CheckerCheckingChecker extends Checker {

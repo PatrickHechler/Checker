@@ -7,8 +7,8 @@ import de.hechler.patrick.check.cc.NotCheckerChecker;
 import de.hechler.patrick.check.cc.OverwriteCheckingChecker;
 import de.hechler.patrick.check.cc.PrivateAccesChecker;
 import de.hechler.patrick.check.cc.ResultParamChecker;
-import de.hechler.patrick.zeugs.check.BigCheckResult;
-import de.hechler.patrick.zeugs.check.Checker;
+import de.hechler.patrick.zeugs.check.objects.BigCheckResult;
+import de.hechler.patrick.zeugs.check.objects.Checker;
 
 public class Test {
 	

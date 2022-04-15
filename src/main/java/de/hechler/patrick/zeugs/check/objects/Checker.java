@@ -1,4 +1,4 @@
-package de.hechler.patrick.zeugs.check;
+package de.hechler.patrick.zeugs.check.objects;
 
 import java.io.IOException;
 import java.lang.reflect.Array;
@@ -281,16 +281,32 @@ public class Checker implements Runnable {
 	 * {@link #instance}.<br>
 	 * if this checker has a non <code>null</code> {@link #instance} and this method has not been
 	 * called, this method will automatically been called, when the {@link #run()} method is invoked.
+	 * <p>
+	 * this method will also enable the assertions for the given class.<br>
+	 * if the given class is a nested class the assertions will be enabled for the outermost class.
 	 * 
 	 * @param clas
 	 *            the class for which the checker should be prepared.
 	 */
 	public final void load(Class <?> clas) {
-		// try {
-		clas.getClassLoader().setClassAssertionStatus(clas.getName(), true);
-		// } catch (Throwable e) { // sollte eigentlich nicht passieren
-		// e.printStackTrace();
-		// }
+		for (Class <?> cls = clas, c; cls != null; cls = c) {
+			c = cls.getEnclosingClass();
+			if (c != null) {
+				continue;
+			}
+			Method m = cls.getEnclosingMethod();
+			if (m != null) {
+				c = m.getDeclaringClass();
+				continue;
+			}
+			Constructor <?> con;
+			con = cls.getEnclosingConstructor();
+			if (con != null) {
+				c = con.getDeclaringClass();
+				continue;
+			}
+			cls.getClassLoader().setClassAssertionStatus(cls.getName(), true);
+		}
 		this.init = new ArrayList <>();
 		this.start = new ArrayList <>();
 		this.end = new ArrayList <>();
@@ -668,51 +684,83 @@ public class Checker implements Runnable {
 	 * this method also reads the jars Class-Path for other jars and directories. for the jars and
 	 * directories referred in the jars are scanned with the same rules as defined here.<br>
 	 * it is ensured that no jar/directory is scanned exactly one time.
+	 * <p>
+	 * if {@code bailError} is <code>true</code> all errors will be wrapped in a
+	 * {@link RuntimeException}
+	 * and then thrown.<br>
+	 * a {@link RuntimeException} will also be thrown if something unexpected happens.<br>
 	 * 
+	 * @param packageName
+	 *            the name of the package for which the classes should be searched
+	 * @param allowSubPackages
+	 *            <code>true</code> is also classes in sub packages should be found
+	 * @param loader
+	 *            the {@link ClassLoader} which should be used to find the URLs and to load classes
+	 * @param bailError
+	 *            if all {@link Exception} should be re-thrown wrapped in {@link RuntimeException} and
+	 *            if a {@link RuntimeException} should be thrown, when something is not as expected.
 	 * @see https://stackoverflow.com/questions/1156552/java-package-introspection
 	 * @see https://stackoverflow.com/a/1157352/18252455
+	 * @see https://creativecommons.org/licenses/by-sa/2.5/
+	 * @see https://creativecommons.org/licenses/by-sa/2.5/legalcode
 	 */
 	public static Set <Class <?>> tryGetClassesForPackage(String packageName, boolean allowSubPackages, ClassLoader loader, boolean bailError) {
 		String packagePath = packageName.replace(".", "/");
 		Set <URL> jarUrls = new HashSet <URL>();
 		Set <Path> directorys = new HashSet <Path>();
 		
-		findClassPools(loader, jarUrls, directorys);
-		Set <Class <?>> classes = new HashSet <Class <?>>();
-		findJarClasses(allowSubPackages, packagePath, jarUrls, directorys, classes, loader);
-		findDirClasses(allowSubPackages, packagePath, directorys, classes, loader);
-		return classes;
+		findClassPools(loader, jarUrls, directorys, bailError);
+		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packagePath, jarUrls, directorys, loader, bailError);
+		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packagePath, directorys, loader, bailError);
+		jarClasses.addAll(dirClasses);
+		return jarClasses;
 	}
 	
-	private static void findDirClasses(boolean allowSubPackages, String packagePath, Set <Path> directorys, Set <Class <?>> classes, ClassLoader loader) {
+	private static Set <Class <?>> findDirClasses(boolean subPackages, String packagePath, Set <Path> directorys, ClassLoader loader, boolean bailError) {
 		Filter <Path> filter;
+		Set <Class <?>> result = new HashSet <>();
 		for (Path up : directorys) {
 			final Path path = up.toAbsolutePath();
-			if (allowSubPackages) {
+			if (subPackages) {
 				filter = p -> {
 					p = p.toAbsolutePath();
-					if (p.startsWith(path)) return true;
-					else if (path.startsWith(path)) return true;
-					else return false;
+					Path other;
+					if (p.getNameCount() >= path.getNameCount()) {
+						other = path;
+					} else {
+						other = path.subpath(0, p.getNameCount());
+					}
+					if (p.startsWith(other)) {
+						return true;
+					} else {
+						return false;
+					}
 				};
 			} else {
 				filter = p -> {
-					if (p.toAbsolutePath().startsWith(path)) return true;
-					else return false;
+					p = p.toAbsolutePath();
+					if (p.getNameCount() > path.getNameCount() + 1) {
+						return false;//TODO
+					} else if (p.toAbsolutePath().startsWith(path)) {
+						return true;
+					} else {
+						return false;
+					}
 				};
 			}
-			findClassFilesRecursive(filter, path, path, classes, loader);
+			findDirClassFilesRecursive(filter, path, path, result, loader, bailError);
 		}
+		return result;
 	}
 	
-	private static void findClassFilesRecursive(Filter <Path> filter, Path path, Path start, Set <Class <?>> classes, ClassLoader loader) {
+	private static void findDirClassFilesRecursive(Filter <Path> filter, Path path, Path start, Set <Class <?>> classes, ClassLoader loader, boolean bailError) {
 		try (DirectoryStream <Path> dirStream = Files.newDirectoryStream(path, filter)) {
 			for (Path p : dirStream) {
 				if (Files.isDirectory(p)) {
-					findClassFilesRecursive(filter, p, start, classes, loader);
+					findDirClassFilesRecursive(filter, p, start, classes, loader, bailError);
 				} else {
-					p = p.subpath(start.getNameCount(), p.getNameCount());
-					String str = p.toString();
+					Path subp = p.subpath(start.getNameCount(), p.getNameCount());
+					String str = subp.toString();
 					if (str.endsWith(".class")) {
 						str = str.substring(0, str.length() - 6);
 						String sep = p.getFileSystem().getSeparator();
@@ -727,17 +775,22 @@ public class Checker implements Runnable {
 							Class <?> cls = Class.forName(fullClassName, false, loader);
 							classes.add(cls);
 						} catch (ClassNotFoundException e) {
-							e.printStackTrace();
+							if (bailError) {
+								throw new RuntimeException(e);
+							}
 						}
 					}
 				}
 			}
 		} catch (IOException e) {
-			e.printStackTrace();
+			if (bailError) {
+				throw new RuntimeException(e);
+			}
 		}
 	}
 	
-	private static void findJarClasses(boolean allowSubPackages, String packagePath, Set <URL> nextJarUrls, Set <Path> directories, Set <Class <?>> classes, ClassLoader loader) {
+	private static Set <Class <?>> findJarClasses(boolean subPackages, String packagePath, Set <URL> nextJarUrls, Set <Path> directories, ClassLoader loader, boolean bailError) {
+		Set <Class <?>> result = new HashSet <>();
 		Set <URL> allJarUrls = new HashSet <>();
 		while (true) {
 			Set <URL> thisJarUrls = new HashSet <>(nextJarUrls);
@@ -746,14 +799,10 @@ public class Checker implements Runnable {
 				break;
 			}
 			allJarUrls.addAll(thisJarUrls);
-			// System.out.println("[findJarClasses]: " + thisJarUrls);
-			// System.out.println("[findJarClasses]: this.len=" + thisJarUrls.size());
-			// System.out.println("[findJarClasses]: all.len=" + allJarUrls.size());
 			for (URL url : thisJarUrls) {
-				// System.out.println("[findJarClassses]: url: " + url);
 				try (JarInputStream stream = new JarInputStream(url.openStream())) {
 					// may want better way to open url connections
-					readJarClassPath(stream, nextJarUrls, directories);
+					readJarClassPath(stream, nextJarUrls, directories, bailError);
 					
 					JarEntry entry = stream.getNextJarEntry();
 					
@@ -763,13 +812,13 @@ public class Checker implements Runnable {
 						
 						if (i > 0 && name.endsWith(".class")) {
 							try {
-								if (allowSubPackages) {
+								if (subPackages) {
 									if (name.substring(0, i).startsWith(packagePath)) {
-										classes.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
 									}
 								} else {
 									if (name.substring(0, i).equals(packagePath)) {
-										classes.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
 									}
 								}
 							} catch (ClassNotFoundException e) {
@@ -784,9 +833,10 @@ public class Checker implements Runnable {
 				}
 			}
 		}
+		return result;
 	}
 	
-	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories) {
+	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories, boolean bailError) {
 		Object classPathObj = stream.getManifest().getMainAttributes().get(new Name("Class-Path"));
 		if (classPathObj == null) {
 			classPathObj = stream.getManifest().getMainAttributes().get("Class-Path");
@@ -797,7 +847,7 @@ public class Checker implements Runnable {
 			for (String entry : entries) {
 				try {
 					URL url = new URL(entry);
-					addUrl(jarUrls, directories, url);
+					addUrl(jarUrls, directories, url, bailError);
 				} catch (MalformedURLException e) {
 					e.printStackTrace();
 				}
@@ -806,11 +856,11 @@ public class Checker implements Runnable {
 		// System.out.println("[findJarClassses]: jar-stream.main-attrs.Name(Class-Path): " + classPath);
 	}
 	
-	private static void findClassPools(ClassLoader classLoader, Set <URL> jarUrls, Set <Path> directoryPaths) {
+	private static void findClassPools(ClassLoader classLoader, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError) {
 		while (classLoader != null) {
 			if (classLoader instanceof URLClassLoader) {
 				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
-					addUrl(jarUrls, directoryPaths, url);
+					addUrl(jarUrls, directoryPaths, url, bailError);
 				}
 			} else {
 				// System.err.println("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
@@ -819,7 +869,7 @@ public class Checker implements Runnable {
 		}
 	}
 	
-	private static void addUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url) {
+	private static void addUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
 		// System.out.println("[findClassPools]: url: " + url);
 		if (url.getFile().endsWith(".jar") || url.getFile().endsWith(".zip")) {
 			// may want better way to detect jar files
@@ -829,11 +879,13 @@ public class Checker implements Runnable {
 				Path path = Paths.get(url.toURI());
 				if (Files.exists(path) && Files.isDirectory(path)) {
 					directoryPaths.add(path);
-				} else {
-					System.err.println("unknown url for class loading: " + url);
+				} else if (bailError) {
+					throw new RuntimeException("unknown url for class loading: " + url);
 				}
 			} catch (URISyntaxException e) {
-				e.printStackTrace();
+				if (bailError) {
+					throw new RuntimeException(e);
+				}
 			}
 		}
 	}

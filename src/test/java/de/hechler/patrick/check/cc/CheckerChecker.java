@@ -6,13 +6,13 @@ import static de.hechler.patrick.zeugs.check.Assert.assertThrows;
 import static de.hechler.patrick.zeugs.check.Assert.assertThrowsAny;
 import static de.hechler.patrick.zeugs.check.Assert.fail;
 
-import de.hechler.patrick.zeugs.check.Checker;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.End;
 import de.hechler.patrick.zeugs.check.anotations.Start;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerException;
 import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
+import de.hechler.patrick.zeugs.check.objects.Checker;
 
 @CheckClass
 public class CheckerChecker extends Checker {

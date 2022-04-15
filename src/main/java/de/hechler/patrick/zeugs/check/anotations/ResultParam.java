@@ -8,8 +8,8 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.lang.reflect.Parameter;
 
-import de.hechler.patrick.zeugs.check.CheckResult;
-import de.hechler.patrick.zeugs.check.Result;
+import de.hechler.patrick.zeugs.check.objects.CheckResult;
+import de.hechler.patrick.zeugs.check.objects.Result;
 
 /**
  * used when a {@link End} method needs to know the result of the previously ran

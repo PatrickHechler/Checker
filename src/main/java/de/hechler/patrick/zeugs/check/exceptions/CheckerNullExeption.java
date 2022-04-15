@@ -1,6 +1,5 @@
 package de.hechler.patrick.zeugs.check.exceptions;
 
-
 public class CheckerNullExeption extends CheckerException {
 	
 	/** UID */
@@ -9,12 +8,19 @@ public class CheckerNullExeption extends CheckerException {
 	public Class <?> type;
 	
 	public CheckerNullExeption() {
-		super("it was null");
-		type = null;
+		this("it was null", null);
+	}
+	
+	public CheckerNullExeption(String msg) {
+		this(msg, null);
 	}
 	
 	public CheckerNullExeption(Class <?> type) {
-		super("it was " + (type.isPrimitive() ? (type == Float.TYPE ? "0.0f" : (type == Double.TYPE ? "0.0d" : (type == Long.TYPE ? "0l" : "0"))) : "null") + ", type=" + type);
+		this("it was a non null value of type: " + type.getCanonicalName() == null ? type.getName() : type.getCanonicalName(), type);
+	}
+	
+	public CheckerNullExeption(String msg, Class <?> type) {
+		super(msg);
 		this.type = type;
 	}
 	

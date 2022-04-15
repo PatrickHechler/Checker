@@ -1,4 +1,4 @@
-package de.hechler.patrick.zeugs.check;
+package de.hechler.patrick.zeugs.check.objects;
 
 import java.io.PrintStream;
 import java.lang.annotation.Annotation;

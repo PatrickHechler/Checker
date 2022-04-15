@@ -6,9 +6,9 @@ import static de.hechler.patrick.zeugs.check.Assert.fail;
 
 import java.lang.reflect.Method;
 
-import de.hechler.patrick.zeugs.check.CheckResult;
-import de.hechler.patrick.zeugs.check.Checker;
 import de.hechler.patrick.zeugs.check.anotations.Check;
+import de.hechler.patrick.zeugs.check.objects.CheckResult;
+import de.hechler.patrick.zeugs.check.objects.Checker;
 
 public class OverwriteCheckingChecker extends Checker {
 	

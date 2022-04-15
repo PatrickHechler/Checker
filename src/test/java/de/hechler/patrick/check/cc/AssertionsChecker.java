@@ -7,11 +7,11 @@ import static de.hechler.patrick.zeugs.check.Assert.assertNotNull;
 import static de.hechler.patrick.zeugs.check.Assert.assertThrows;
 import static de.hechler.patrick.zeugs.check.Assert.assertTrue;
 
-import de.hechler.patrick.zeugs.check.CheckResult;
-import de.hechler.patrick.zeugs.check.Checker;
-import de.hechler.patrick.zeugs.check.Result;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
+import de.hechler.patrick.zeugs.check.objects.CheckResult;
+import de.hechler.patrick.zeugs.check.objects.Checker;
+import de.hechler.patrick.zeugs.check.objects.Result;
 
 @CheckClass
 public class AssertionsChecker {
