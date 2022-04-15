@@ -27,7 +27,7 @@ public class CheckerCheckingChecker extends Checker {
 	
 	@Check
 	public void resultChecker() {
-		CheckResult r = new SubChecker1().result();
+		CheckResult r = new SubChecker1().get();
 		assertFalse(r.wentExpected());
 		assertTrue(r.checked("empty"));
 		assertTrue(r.wentExpected("empty"));
@@ -35,7 +35,7 @@ public class CheckerCheckingChecker extends Checker {
 		assertFalse(r.wentExpected("bad"));
 		assertEquals(3, r.cehckedCount());
 		
-		r = new SubChecker2().result();
+		r = new SubChecker2().get();
 		assertTrue(r.wentExpected());
 		assertTrue(r.checked("good"));
 		assertFalse(r.checked("bad"));
@@ -45,13 +45,13 @@ public class CheckerCheckingChecker extends Checker {
 		assertTrue(r.wentExpected("goodBad"));
 		assertEquals(3, r.cehckedCount());
 		
-		r = new SubChecker3().result();
+		r = new SubChecker3().get();
 		assertFalse(r.wentExpected());
 		assertFalse(r.wentExpected("baadGood"));
 		assertFalse(r.wentExpected("bad"));
 		assertEquals(2, r.cehckedCount());
 		
-		r = new SubChecker4().result();
+		r = new SubChecker4().get();
 		assertTrue(r.wentExpected());
 		assertEquals(0, r.cehckedCount());
 	}
@@ -141,7 +141,7 @@ public class CheckerCheckingChecker extends Checker {
 	@Check
 	public void checkerCreateCheck() {
 		Checker c = new Checker(this.new InnerChecker());
-		CheckResult res = c.result();
+		CheckResult res = c.get();
 		assertTrue(res.wentExpected());
 		res = Checker.check(SubFormerWrongChecker.class);
 		assertTrue(res.wentExpected());

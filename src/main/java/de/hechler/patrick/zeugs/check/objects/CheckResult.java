@@ -12,8 +12,12 @@ import java.util.function.BiConsumer;
 /**
  * this class saves the {@link Result}s of a {@link Checker}.<br>
  * The {@link Result} of each checked {@link Method} is accessible with the
- * {@link #getResult(Method)} method<p>
- * 
+ * {@link #getResult(Method)} method
+ * <p>
+ * in addition to all checked methods, the executed time for all checks is saved.<br>
+ * to get the time needed for the execution the class check {@link #getTime()} can be used.<br>
+ * to get the start time of the class check the field {@link #start} can be accessed.<br>
+ * to get the end time of the class check {@link #end} can be accessed.
  * 
  * @author Patrick
  */
@@ -22,39 +26,40 @@ public final class CheckResult {
 	/**
 	 * this map saves all {@link Method}s with their names as keys (and their {@link Parameter params})
 	 */
-	private Map <String, Method> methods = new HashMap <>();
+	private final Map <String, Method> methods;
 	/**
 	 * this map contains all {@link Result} and the {@link Method}, from which the results are
 	 */
-	private Map <Method, Result> results = new HashMap <>();
+	private final Map <Method, Result> results;
 	/**
-	 * the time when this {@link CheckResult} was created
+	 * the time when the checks were started
 	 */
-	public final long start = System.currentTimeMillis();
+	public final long start;
 	/**
-	 * the time when the {@link Checker} finished checking for this {@link CheckResult}.
+	 * the time when all checks were finished
 	 */
-	private long end;
-	
-	
+	public final long end;
 	
 	/**
-	 * sets the end time of this {@link CheckResult}
+	 * creates a new {@link CheckResult} with the given values.
+	 * <p>
+	 * to build the {@link #methods} and {@link #results} maps the
+	 * {@link #put(Map, Map, Method, Result)} method is recommended.
 	 * 
+	 * @param methods
+	 *            this map contains the methods which has been checked.
+	 * @param results
+	 *            this map contains the {@link Result} of the checks.
+	 * @param start
+	 *            the time when the checker started to check
 	 * @param end
-	 *            the end time
+	 *            the time when the checks were finished
 	 */
-	void setEnd(long end) {
+	public CheckResult(Map <String, Method> methods, Map <Method, Result> results, long start, long end) {
+		this.methods = methods;
+		this.results = results;
+		this.start = start;
 		this.end = end;
-	}
-	
-	/**
-	 * returns the end time of this {@link CheckResult}
-	 * 
-	 * @return the end time of this {@link CheckResult}
-	 */
-	public long getEnd() {
-		return end;
 	}
 	
 	/**
@@ -62,20 +67,18 @@ public final class CheckResult {
 	 * 
 	 * @return the total time needed for this {@link CheckResult}
 	 */
-	public long getTime() {
-		return end - start;
-	}
+	public long getTime() { return end - start; }
 	
 	/**
-	 * this method saves the {@link Result} with the {@link Method} in the {@link #results} and the
+	 * this method saves the {@link Result} with the {@link Method} in the {@code results} and the
 	 * method with its {@link Method#getName() name} (and {@link Method#getParameters()
-	 * params}) in the {@link #methods}.<br>
+	 * params}) in the {@code methods}.<br>
 	 * When the {@link Method} has no params (<code>{@link Method#getParameterCount()} == 0</code>)
-	 * there will be two links created to the {@link Method} in {@link #methods}: one
+	 * there will be two links created to the {@link Method} in {@code methods}: one
 	 * wit only the {@link Method#getName() name} and one with the {@link Method#getName() name} and the
 	 * braces '()'.<br>
 	 * When the {@link Method} has params (<code>{@link Method#getParameterCount()} > 0</code>) there
-	 * will be one link in the {@link #methods}: it will start with the
+	 * will be one link in the {@code methods}: it will start with the
 	 * {@link Method#getName() name} and then the braces. between the braces will be the
 	 * {@link Method#getParameters() params} with only their {@link Parameter#getType() type} as
 	 * fully qualifying name. if a param is a {@link Parameter#isVarArgs() varArg}, it will have '...'
@@ -83,15 +86,21 @@ public final class CheckResult {
 	 * '[]' at the end. The {@link Method#getParameters() params} will be separated by
 	 * <code>', '</code>.
 	 * 
-	 * @param m
+	 * @param methods
+	 *            the map containing the methods refereed by their names
+	 * @param results
+	 *            the map containing the results refereed by the Method
+	 * @param met
+	 *            the checked {@link Method}
 	 * @param value
+	 *            the {@link Result} value of the checked {@link Method}
 	 */
-	void set(Method m, Result value) {
-		if (m.getParameterCount() > 0) {
-			StringBuilder name = new StringBuilder(m.getName()).append('(');
-			Parameter[] clss = m.getParameters();
+	public static void put(Map <String, Method> methods, Map <Method, Result> results, Method met, Result value) {
+		if (met.getParameterCount() > 0) {
+			StringBuilder name = new StringBuilder(met.getName()).append('(');
+			Parameter[] clss = met.getParameters();
 			if (clss.length == 0) {
-				addToMethods(m, m.getName());
+				addToMethods(methods, results, met, met.getName());
 			}
 			Class <?> zw = clss[0].getType();
 			int deep = 0;
@@ -116,10 +125,10 @@ public final class CheckResult {
 				}
 			}
 			String methodName = name.append(')').toString();
-			addToMethods(m, methodName);
-			this.results.put(m, value);
+			addToMethods(methods, results, met, methodName);
+			results.put(met, value);
 			if (clss[clss.length - 1].isVarArgs()) {
-				name = new StringBuilder(m.getName()).append('(');
+				name = new StringBuilder(met.getName()).append('(');
 				zw = clss[0].getType();
 				deep = 0;
 				while (zw.isArray()) {
@@ -154,24 +163,24 @@ public final class CheckResult {
 					name.append("[]");
 				}
 				name.append("...");
-				addToMethods(m, methodName);
+				addToMethods(methods, results, met, methodName);
 			}
 		} else {
-			this.methods.put(m.getName() + "()", m);
-			this.methods.put(m.getName(), m);
-			this.results.put(m, value);
+			methods.put(met.getName() + "()", met);
+			methods.put(met.getName(), met);
+			results.put(met, value);
 		}
 	}
 	
-	private void addToMethods(Method m, String methodName) {
-		Method met = this.methods.get(methodName);
+	private static void addToMethods(Map <String, Method> methods, Map <Method, Result> results, Method m, String methodName) {
+		Method met = methods.get(methodName);
 		if (met != null) {
-			Result res = this.results.get(met);
+			Result res = results.get(met);
 			if (res.badResult()) {
 				return;
 			}
 		}
-		this.methods.put(methodName, m);
+		methods.put(methodName, m);
 	}
 	
 	/**

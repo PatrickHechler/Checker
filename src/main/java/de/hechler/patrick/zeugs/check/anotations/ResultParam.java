@@ -14,8 +14,10 @@ import de.hechler.patrick.zeugs.check.objects.Result;
 /**
  * used when a {@link End} method needs to know the result of the previously ran
  * check.<br>
- * if {@link End#onlyOnce()} returns <code>false</code> the param will be the {@link Result} from the executed check.<br>
- * if {@link End#onlyOnce()} returns <code>true</code> the param will be the {@link CheckResult} containing all executed checks of this checker.
+ * if {@link End#onlyOnce()} returns <code>false</code> the param will be the {@link Result} from
+ * the executed check.<br>
+ * if {@link End#onlyOnce()} returns <code>true</code> the param will be the {@link CheckResult}
+ * containing all executed checks of this checker.
  * <p>
  * if this method is not invoked as an {@link End} method the {@link Parameter} will be
  * <code>null</code>
@@ -25,7 +27,10 @@ import de.hechler.patrick.zeugs.check.objects.Result;
  * {@link Result}.<br>
  * if the method is executed as a {@link End} with {@link End#onlyOnce()} set to <code>true</code>,
  * the {@link Parameter} must be of type {@link CheckResult} or a super class of
- * {@link CheckResult}
+ * {@link CheckResult}.<br>
+ * the {@link CheckResult} given to the method will have a start time set, but no end time.
+ * The end time of the check will be set after all {@link End} methods with {@link End#onlyOnce()}
+ * set to <code>false</code> has been executed.
  * <p>
  * if {@link #disabled()} is <code>true</code> the annotation will be ignored
  * <p>

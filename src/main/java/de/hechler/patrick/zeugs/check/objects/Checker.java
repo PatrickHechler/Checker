@@ -1,31 +1,17 @@
 package de.hechler.patrick.zeugs.check.objects;
 
-import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
-import java.net.MalformedURLException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.nio.file.DirectoryStream;
-import java.nio.file.DirectoryStream.Filter;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.HashMap;
 import java.util.List;
-import java.util.Set;
+import java.util.Map;
 import java.util.function.Supplier;
-import java.util.jar.Attributes.Name;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
@@ -34,8 +20,22 @@ import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ResultParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
-import de.hechler.patrick.zeugs.check.interfaces.TwoValues;
 
+/**
+ * this class will be used to execute all checks.<br>
+ * the preferred was to instantiate a {@link Checker} is by using the
+ * {@link #generateChecker(Class)} method.<br>
+ * if the {@link Checker} is only needed for the {@link CheckResult} the {@link #check(Class)}
+ * method should be used.
+ * <p>
+ * to run multiple checks the {@link BigChecker} class is recommended.
+ * <p>
+ * even if the checker is not a final class, all methods used for checking are marked as final.<br>
+ * so it can does not affect the check process if a checker is exactly of the {@link Check} class or
+ * of a sub-class.
+ * 
+ * @author Patrick
+ */
 public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	static {
@@ -70,10 +70,10 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	/**
 	 * saves the result of this checker or <code>null</code> if the checks has not been executed.<br>
 	 * to execute the checks the {@link #run()} method is used.<br>
-	 * if {@link #result()} is called before the checks has been executed, the {@link #run()} method
+	 * if {@link #get()} is called before the checks has been executed, the {@link #run()} method
 	 * will be automatically be executed.
 	 * 
-	 * @see #result()
+	 * @see #get()
 	 * @see #run()
 	 */
 	private CheckResult result;
@@ -98,7 +98,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * (static methods can always be called)
 	 * <p>
 	 * if the {@code instance} is <code>null</code>, the {@link #load(Class)} method has to be called
-	 * before the {@link #run()} (or {@link #result()}) method gets invoked.<br>
+	 * before the {@link #run()} (or {@link #get()}) method gets invoked.<br>
 	 * if they are invoked before the {@link #load(Class)} method was called and the {@link #instance}
 	 * is <code>null</code> they will throw an {@link IllegalStateException}.
 	 * 
@@ -120,20 +120,6 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 */
 	public final boolean checkedAlready() {
 		return result == null;
-	}
-	
-	/**
-	 * returns the {@link #result} of this checker.<br>
-	 * if the {@link #result} has not yet been generated the {@link #run()} method is used to generate
-	 * the {@link #result}.
-	 * 
-	 * @return the {@link #result} of this checker
-	 */
-	public final CheckResult result() {
-		if (result == null) {
-			run();
-		}
-		return result;
 	}
 	
 	/**
@@ -165,7 +151,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * <p>
 	 * if this method is run multiple times the checks are executed multiple times.<br>
 	 * to check if the checks already has been executed use {@link #checkedAlready()}.<br>
-	 * this method is automatically invoked, when {@link #result()} is invoked and the checks have not
+	 * this method is automatically invoked, when {@link #get()} is invoked and the checks have not
 	 * been executed.
 	 * <p>
 	 * this method will not create new {@link Thread} objects, so all checks/starts/ends are executed
@@ -190,35 +176,38 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			}
 			load(this.instance.getClass());
 		}
-		this.result = new CheckResult();
+		long start = System.currentTimeMillis();
+		Map <String, Method> methods = new HashMap <>();
+		Map <Method, Result> results = new HashMap <>();
 		this.init.forEach(m -> run(m, this.instance, null, null));
 		this.check.forEach(m -> {
 			this.start.forEach(r -> run(r, this.instance, null, m));
 			Result res = run(m, this.instance, null, null);
-			this.result.set(m, res);
+			CheckResult.put(methods, results, m, res);
 			this.end.forEach(r -> run(r, this.instance, res, m));
 		});
-		this.finalize.forEach(m -> run(m, this.instance, null, null));
-		this.result.setEnd(System.currentTimeMillis());
+		this.finalize.forEach(m -> run(m, this.instance, this.result, null));
+		long end = System.currentTimeMillis();
+		this.result = new CheckResult(methods, results, start, end);
 	}
 	
 	
-	private static Result run(final Method m, Object invoker, Result checked, Method notRun) {
+	private static Result run(Method met, Object invoker, Object checked, Method notRun) {
 		Result result;
 		long start = System.currentTimeMillis();
 		try {
-			Parameter[] params = m.getParameters();
+			Parameter[] params = met.getParameters();
 			Object[] ps = new Object[params.length];
 			for (int i = 0; i < params.length; i ++ ) {
 				Parameter param = params[i];
-				ps[i] = getParam(invoker, checked, notRun, param, m.getDeclaringClass());
+				ps[i] = getParam(invoker, checked, notRun, param, met.getDeclaringClass());
 			}
-			boolean flag = m.isAccessible();
-			m.setAccessible(true);
+			boolean flag = met.isAccessible();
+			met.setAccessible(true);
 			start = System.currentTimeMillis();
-			Object res = m.invoke(invoker, ps);
+			Object res = met.invoke(invoker, ps);
 			long end = System.currentTimeMillis();
-			m.setAccessible(flag);
+			met.setAccessible(flag);
 			result = new Result(res, start, end);
 			// } catch (IllegalAccessException | IllegalArgumentException e) {
 			// throw new AssertionError("can't run method: '" + m.getName() + "' params: " +
@@ -240,7 +229,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		return result;
 	}
 	
-	private static Object getParam(Object invoker, Result checked, Method notRun, Parameter param, Class <?> cls) throws AssertionError, ClassCastException {
+	private static Object getParam(Object invoker, Object checked, Method notRun, Parameter param, Class <?> cls) throws AssertionError, ClassCastException {
 		ParamCreater pc = param.getAnnotation(ParamCreater.class);
 		MethodParam mp = param.getAnnotation(MethodParam.class);
 		ResultParam rp = param.getAnnotation(ResultParam.class);
@@ -373,23 +362,23 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * @param clas
 	 *            the {@link Class} to be checked
 	 * @return the result of the created {@link Checker}
-	 * @implNote it behaves like <code>{@link #generateChecker(Class)}.{@link #result()}</code>
+	 * @implNote it behaves like <code>{@link #generateChecker(Class)}.{@link #get()}</code>
 	 */
 	public static CheckResult check(final Class <?> clas) {
 		try {
 			Object instance = createInstance(clas);
 			if (instance instanceof Checker) {
-				return ((Checker) instance).result();
+				return ((Checker) instance).get();
 			} else {
 				Checker checker = new Checker(instance);
-				return checker.result();
+				return checker.get();
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
 			// make with 'static' checker (error on instance methods)
 		}
 		Checker c = new Checker(null);
 		c.load(clas);
-		return c.result();
+		return c.get();
 	}
 	
 	/**
@@ -416,145 +405,6 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		Checker c = new Checker(null);
 		c.load(clas);
 		return c;
-	}
-	
-	/**
-	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
-	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
-	 * 
-	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
-	 * @param classes
-	 *            the array containing the classes to check
-	 * @return the generated {@link BigChecker}
-	 */
-	public static BigChecker generateBigChecker(boolean needCheckClass, Class <?>... classes) {
-		Iterator <TwoValues <Class <?>, Checker>> iter = generateIterator(needCheckClass, classes);
-		return new BigChecker(iter);
-	}
-	
-	/**
-	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
-	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
-	 * <p>
-	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
-	 * checks.<br>
-	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
-	 * the Multithreading.<br>
-	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
-	 * calling threads of the {@link BigChecker#run()}.<br>
-	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
-	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
-	 * {@link IllegalArgumentException} will be thrown.
-	 * 
-	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
-	 * @param maxWorkers
-	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
-	 *            when all checks should be executed in the same thread.
-	 * @param classes
-	 *            the array containing the classes to check
-	 * @return the generated {@link BigChecker}
-	 */
-	public static BigChecker generateBigChecker(boolean needCheckClass, int maxWorkers, Class <?>... classes) {
-		if (maxWorkers < -1) {
-			throw new IllegalArgumentException("max workers < -1 maxWorkers=" + maxWorkers);
-		}
-		Iterator <TwoValues <Class <?>, Checker>> iter = generateIterator(needCheckClass, classes);
-		return new BigChecker(iter, maxWorkers);
-	}
-	
-	/**
-	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
-	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
-	 * 
-	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
-	 * @param classes
-	 *            the iterator containing the classes to check
-	 * @return the generated {@link BigChecker}
-	 */
-	public static BigChecker generateBigChecker(boolean needCheckClass, Iterator <Class <?>> classes) {
-		Iterator <TwoValues <Class <?>, Checker>> iter = getIterator(needCheckClass, classes);
-		return new BigChecker(iter);
-	}
-	
-	/**
-	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
-	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
-	 * <p>
-	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
-	 * checks.<br>
-	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
-	 * the Multithreading.<br>
-	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
-	 * calling threads of the {@link BigChecker#run()}.<br>
-	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
-	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
-	 * {@link IllegalArgumentException} will be thrown.
-	 * 
-	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
-	 * @param maxWorkers
-	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
-	 *            when all checks should be executed in the same thread.
-	 * @param classes
-	 *            the iterator containing the classes to check
-	 * @return the generated {@link BigChecker}
-	 */
-	public static BigChecker generateBigChecker(boolean needCheckClass, int maxWorkers, Iterator <Class <?>> classes) {
-		Iterator <TwoValues <Class <?>, Checker>> iter = getIterator(needCheckClass, classes);
-		return new BigChecker(iter, maxWorkers);
-	}
-	
-	private static Iterator <TwoValues <Class <?>, Checker>> generateIterator(boolean needCheckClass, Class <?>... classes) {
-		if (needCheckClass) {
-			return new CheckerIterator(new ArrayIterator <>(classes));
-		} else {
-			return new ArrayFunctionIterator <>(classes, cls -> new TwoValuesImpl <>(cls, generateChecker(cls)));
-		}
-	}
-	
-	private static Iterator <TwoValues <Class <?>, Checker>> getIterator(boolean needCheckClass, Iterator <Class <?>> classes) {
-		if (needCheckClass) {
-			return new CheckerIterator(classes);
-		} else {
-			return new Iterator <TwoValues <Class <?>, Checker>>() {
-				
-				@Override
-				public boolean hasNext() {
-					return classes.hasNext();
-				}
-				
-				@Override
-				public TwoValues <Class <?>, Checker> next() {
-					Class <?> cls = classes.next();
-					Checker checker = generateChecker(cls);
-					return new TwoValuesImpl <Class <?>, Checker>(cls, checker);
-				}
-				
-			};
-		}
 	}
 	
 	private static <T> T createInstance(final Class <T> clas)
@@ -599,451 +449,6 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		Object instance = c.newInstance(ps);
 		c.setAccessible(flag);
 		return clas.cast(instance);
-	}
-	
-	/**
-	 * works like {@link #checkAll(boolean, Class...)}, but instead of an class array this class uses
-	 * the full class names and the given {@link ClassLoader} to get the classes which should be
-	 * checked.
-	 * 
-	 * @param needEnabedCheckClass
-	 *            if only classes annotated with {@link CheckClass} should be checked
-	 * @param classLoader
-	 *            the loader used to load classes
-	 * @param fullClassNames
-	 *            an array containing all full class names from the classes which should be checked
-	 * @return the result of all checks
-	 */
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String... fullClassNames) {
-		BigCheckResult bcr = new BigCheckResult();
-		for (String fcn : fullClassNames) {
-			try {
-				Class <?> cls;
-				cls = Class.forName(fcn, false, classLoader);
-				if (needEnabedCheckClass) {
-					CheckClass cc = cls.getAnnotation(CheckClass.class);
-					if (cc == null) continue;
-					if (cc.disabled()) continue;
-				}
-				bcr.put(cls, check(cls));
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		bcr.setEnd();
-		return bcr;
-	}
-	
-	/**
-	 * works like {@link #checkAll(boolean, ClassLoader, String...)}, but uses to load classes the class
-	 * loader of the {@link Checker} class.
-	 * 
-	 * @param needEnabedCheckClass
-	 *            if only classes annotated with {@link CheckClass} should be checked
-	 * @param classes
-	 *            the array containing all classes which should be checked
-	 * @return the result of all checks
-	 * @see #checkAll(boolean, Iterator)
-	 */
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, String... fullClassNames) {
-		BigCheckResult bcr = new BigCheckResult();
-		ClassLoader loader = Checker.class.getClassLoader();
-		for (String fcn : fullClassNames) {
-			try {
-				Class <?> cls;
-				cls = Class.forName(fcn, false, loader);
-				if (needEnabedCheckClass) {
-					CheckClass cc = cls.getAnnotation(CheckClass.class);
-					if (cc == null) continue;
-					if (cc.disabled()) continue;
-				}
-				bcr.put(cls, check(cls));
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		bcr.setEnd();
-		return bcr;
-	}
-	
-	/**
-	 * works like {@link #checkAll(boolean, Iterator)}, but uses instead of an {@link Iterator} an
-	 * {@link Class} array.
-	 * 
-	 * @param needEnabedCheckClass
-	 *            if only classes annotated with {@link CheckClass} should be checked
-	 * @param classes
-	 *            the array containing all classes which should be checked
-	 * @return the result of all checks
-	 * @see #checkAll(boolean, Iterator)
-	 */
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Class <?>... classes) {
-		BigCheckResult bcr = new BigCheckResult();
-		for (Class <?> cls : classes) {
-			if (needEnabedCheckClass) {
-				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) {
-					continue;
-				}
-				if (cc.disabled()) {
-					continue;
-				}
-			}
-			bcr.put(cls, check(cls));
-		}
-		bcr.setEnd();
-		return bcr;
-	}
-	
-	/**
-	 * checks all classes from the iterator.<br>
-	 * if {@code needEnabledCheckClass} is <code>true</code> only classes which are annotated with
-	 * {@link CheckClass} and are not {@link CheckClass#disabled()} are checked.
-	 * 
-	 * @param needEnabedCheckClass
-	 *            if only classes annotated with {@link CheckClass} should be checked
-	 * @param iter
-	 *            the {@link Iterator} which iterates over all {@link Class} objects to check
-	 * @return the result of all executed checks
-	 */
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> iter) {
-		BigCheckResult bcr = new BigCheckResult();
-		while (iter.hasNext()) {
-			Class <?> cls = iter.next();
-			if (needEnabedCheckClass) {
-				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) {
-					continue;
-				}
-				if (cc.disabled()) {
-					continue;
-				}
-			}
-			CheckResult cr = check(cls);
-			bcr.put(cls, cr);
-		}
-		bcr.setEnd();
-		return bcr;
-	}
-	
-	/**
-	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
-	 * {@code tryCheckAll(subPackages, package.getName(), Checker.class.getClassLoader())}.
-	 * 
-	 * @param subPackages
-	 *            <code>true</code> if also classes in subPackages should be loaded
-	 * @param pakage
-	 *            the package
-	 * @param loader
-	 *            the loader used to find/load classes
-	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
-	 */
-	public static BigCheckResult tryCheckAll(boolean subPackages, Package pakage) {
-		return tryCheckAll(subPackages, pakage.getName(), Checker.class.getClassLoader());
-	}
-	
-	/**
-	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
-	 * {@code tryCheckAll(subPackages, package, Checker.class.getClassLoader())}.
-	 * 
-	 * @param subPackages
-	 *            <code>true</code> if also classes in subPackages should be loaded
-	 * @param pakage
-	 *            the name of the package (like {@link Package#getName()})
-	 * @param loader
-	 *            the loader used to find/load classes
-	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
-	 */
-	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage) {
-		return tryCheckAll(subPackages, pakage, Checker.class.getClassLoader());
-	}
-	
-	/**
-	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
-	 * {@code tryCheckAll(subPackages, package.getName(), loader)}.
-	 * 
-	 * @param subPackages
-	 *            <code>true</code> if also classes in subPackages should be loaded
-	 * @param pakage
-	 *            the package
-	 * @param loader
-	 *            the loader used to find/load classes
-	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
-	 */
-	public static BigCheckResult tryCheckAll(boolean subPackages, Package pakage, ClassLoader loader) {
-		return tryCheckAll(subPackages, pakage.getName(), loader);
-	}
-	
-	/**
-	 * like {@link #tryCheckAll(boolean, String, ClassLoader, boolean)} with
-	 * {@code tryCheckAll(subPackages, package, loader, true)}.
-	 * 
-	 * @param subPackages
-	 *            <code>true</code> if also classes in subPackages should be loaded
-	 * @param pakage
-	 *            the name of the package (like {@link Package#getName()})
-	 * @param loader
-	 *            the loader used to find/load classes
-	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
-	 */
-	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage, ClassLoader loader) {
-		return tryCheckAll(subPackages, pakage, loader, false);
-	}
-	
-	/**
-	 * tries to check all classes from the given package.<br>
-	 * if {@code subPackages} is <code>true</code> this method also tries to check the classes in
-	 * supPackages.
-	 * <p>
-	 * a class is in a package, when the {@link Class#forName(String, boolean, ClassLoader)} method
-	 * finds the class, when the name starts with {@code pakage + "." + restName}.<br>
-	 * if {@code subPackages} is <code>false</code> {@code restName} is not allowed to contain a
-	 * {@code '.'}.
-	 * <p>
-	 * if {@code bailError} is <code>true</code>, errors on loading/finding the classes will be
-	 * re-thrown.<br>
-	 * if {@code bailError} is <code>false</code>, errors on loading/finding the classes will be
-	 * suppressed.
-	 * <p>
-	 * this method checks only classes wich are annotated with {@link CheckClass} and are not
-	 * ({@link CheckClass#disabled()}).
-	 * <p>
-	 * this method can not guarantee to find any classes in the given package or any sub-package!
-	 * 
-	 * @param subPackages
-	 *            <code>true</code> if also classes in subPackages should be loaded
-	 * @param pakage
-	 *            the name of the package (like {@link Package#getName()})
-	 * @param loader
-	 *            the loader used to find/load classes
-	 * @param bailError
-	 *            if errors on loading/finding classes should be re-thrown (<code>true</code>) or
-	 *            suppressed (<code>false</code>)
-	 * @return the result of all executed checks
-	 */
-	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage, ClassLoader loader, boolean bailError) {
-		Set <Class <?>> classes = tryGetClassesForPackage(pakage, subPackages, loader, bailError);
-		return checkAll(true, classes.iterator());
-	}
-	
-	/**
-	 * orig description:<br>
-	 * Scans all classloaders for the current thread for loaded jars, and then scans
-	 * each jar for the package name in question, listing all classes directly under
-	 * the package name in question. Assumes directory structure in jar file and class
-	 * package naming follow java conventions (i.e. com.example.test.MyTest would be in
-	 * /com/example/test/MyTest.class)
-	 * <p>
-	 * in addition this method also scans for directories, where also is assumed, that the classes are
-	 * placed followed by the java conventions. (i.e. <code>com.example.test.MyTest</code> would be in
-	 * <code>directory/com/example/test/MyTest.class</code>)
-	 * <p>
-	 * this method also reads the jars Class-Path for other jars and directories. for the jars and
-	 * directories referred in the jars are scanned with the same rules as defined here.<br>
-	 * it is ensured that no jar/directory is scanned exactly one time.
-	 * <p>
-	 * if {@code bailError} is <code>true</code> all errors will be wrapped in a
-	 * {@link RuntimeException}
-	 * and then thrown.<br>
-	 * a {@link RuntimeException} will also be thrown if something unexpected happens.<br>
-	 * 
-	 * @param packageName
-	 *            the name of the package for which the classes should be searched
-	 * @param allowSubPackages
-	 *            <code>true</code> is also classes in sub packages should be found
-	 * @param loader
-	 *            the {@link ClassLoader} which should be used to find the URLs and to load classes
-	 * @param bailError
-	 *            if all {@link Exception} should be re-thrown wrapped in {@link RuntimeException} and
-	 *            if a {@link RuntimeException} should be thrown, when something is not as expected.
-	 * @see https://stackoverflow.com/questions/1156552/java-package-introspection
-	 * @see https://stackoverflow.com/a/1157352/18252455
-	 * @see https://creativecommons.org/licenses/by-sa/2.5/
-	 * @see https://creativecommons.org/licenses/by-sa/2.5/legalcode
-	 */
-	public static Set <Class <?>> tryGetClassesForPackage(String packageName, boolean allowSubPackages, ClassLoader loader, boolean bailError) {
-		Set <URL> jarUrls = new HashSet <URL>();
-		Set <Path> directorys = new HashSet <Path>();
-		findClassPools(loader, jarUrls, directorys, bailError);
-		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packageName, jarUrls, directorys, loader, bailError);
-		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packageName, directorys, loader, bailError);
-		jarClasses.addAll(dirClasses);
-		return jarClasses;
-	}
-	
-	private static Set <Class <?>> findDirClasses(boolean subPackages, String packageName, Set <Path> directorys, ClassLoader loader, boolean bailError) {
-		Filter <Path> filter;
-		Set <Class <?>> result = new HashSet <>();
-		for (Path startPath : directorys) {
-			String packagePath = packageName.replace(".", startPath.getFileSystem().getSeparator());
-			final Path searchPath = startPath.resolve(packagePath).toAbsolutePath();
-			if (subPackages) {
-				filter = p -> {
-					p = p.toAbsolutePath();
-					Path other;
-					if (p.getNameCount() >= searchPath.getNameCount()) {
-						other = searchPath;
-					} else {
-						other = searchPath.subpath(0, p.getNameCount());
-					}
-					if (p.startsWith(other)) {
-						return true;
-					} else {
-						return false;
-					}
-				};
-			} else {
-				filter = p -> {
-					p = p.toAbsolutePath();
-					if (p.getNameCount() > searchPath.getNameCount() + 1) {
-						return false;
-					} else if (p.toAbsolutePath().startsWith(searchPath)) {
-						return true;
-					} else {
-						return false;
-					}
-				};
-			}
-			if (Files.exists(searchPath)) {
-				findDirClassFilesRecursive(filter, searchPath, startPath, result, loader, bailError);
-			} // the package does not have to exist in every directory
-		}
-		return result;
-	}
-	
-	private static void findDirClassFilesRecursive(Filter <Path> filter, Path path, Path start, Set <Class <?>> classes, ClassLoader loader, boolean bailError) {
-		try (DirectoryStream <Path> dirStream = Files.newDirectoryStream(path, filter)) {
-			for (Path p : dirStream) {
-				if (Files.isDirectory(p)) {
-					findDirClassFilesRecursive(filter, p, start, classes, loader, bailError);
-				} else {
-					Path subp = p.subpath(start.getNameCount(), p.getNameCount());
-					String str = subp.toString();
-					if (str.endsWith(".class")) {
-						str = str.substring(0, str.length() - 6);
-						String sep = p.getFileSystem().getSeparator();
-						if (str.startsWith(sep)) {
-							str = str.substring(sep.length());
-						}
-						if (str.endsWith(sep)) {
-							str = str.substring(0, str.length() - sep.length());
-						}
-						String fullClassName = str.replace(sep, ".");
-						try {
-							Class <?> cls = Class.forName(fullClassName, false, loader);
-							classes.add(cls);
-						} catch (ClassNotFoundException e) {
-							if (bailError) {
-								throw new RuntimeException(e);
-							}
-						}
-					}
-				}
-			}
-		} catch (IOException e) {
-			if (bailError) {
-				throw new RuntimeException(e);
-			}
-		}
-	}
-	
-	private static Set <Class <?>> findJarClasses(boolean subPackages, String packageName, Set <URL> nextJarUrls, Set <Path> directories, ClassLoader loader, boolean bailError) {
-		String packagePath = packageName.replace('.', '/');
-		Set <Class <?>> result = new HashSet <>();
-		Set <URL> allJarUrls = new HashSet <>();
-		while (true) {
-			Set <URL> thisJarUrls = new HashSet <>(nextJarUrls);
-			thisJarUrls.removeAll(allJarUrls);
-			if (thisJarUrls.isEmpty()) {
-				break;
-			}
-			allJarUrls.addAll(thisJarUrls);
-			for (URL url : thisJarUrls) {
-				try (JarInputStream stream = new JarInputStream(url.openStream())) {
-					// may want better way to open url connections
-					readJarClassPath(stream, nextJarUrls, directories, bailError);
-					JarEntry entry = stream.getNextJarEntry();
-					while (entry != null) {
-						String name = entry.getName();
-						int i = name.lastIndexOf("/");
-						
-						if (i > 0 && name.endsWith(".class")) {
-							try {
-								if (subPackages) {
-									if (name.substring(0, i).startsWith(packagePath)) {
-										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
-									}
-								} else {
-									if (name.substring(0, i).equals(packagePath)) {
-										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
-									}
-								}
-							} catch (ClassNotFoundException e) {
-								e.printStackTrace();
-							}
-						}
-						entry = stream.getNextJarEntry();
-					}
-					stream.close();
-				} catch (IOException e) {
-					e.printStackTrace();
-				}
-			}
-		}
-		return result;
-	}
-	
-	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories, boolean bailError) {
-		Object classPathObj = stream.getManifest().getMainAttributes().get(new Name("Class-Path"));
-		if (classPathObj == null) {
-			return;
-		}
-		if (classPathObj instanceof String) {
-			String[] entries = ((String) classPathObj).split("\\s+");// should also work with a single space (" ")
-			for (String entry : entries) {
-				try {
-					URL url = new URL(entry);
-					addFromUrl(jarUrls, directories, url, bailError);
-				} catch (MalformedURLException e) {
-					e.printStackTrace();
-				}
-			}
-		} else if (bailError) {
-			throw new RuntimeException("the Class-Path attribute is no String: " + classPathObj.getClass().getName() + " tos='" + classPathObj + "'");
-		}
-	}
-	
-	private static void findClassPools(ClassLoader classLoader, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError) {
-		while (classLoader != null) {
-			if (classLoader instanceof URLClassLoader) {
-				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
-					addFromUrl(jarUrls, directoryPaths, url, bailError);
-				}
-			} else if (bailError) {
-				throw new RuntimeException("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
-			}
-			classLoader = classLoader.getParent();
-		}
-	}
-	
-	private static void addFromUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
-		if (url.getFile().endsWith(".jar") || url.getFile().endsWith(".zip")) {
-			// may want better way to detect jar files
-			jarUrls.add(url);
-		} else {
-			try {
-				Path path = Paths.get(url.toURI());
-				if (Files.exists(path) && Files.isDirectory(path)) {
-					directoryPaths.add(path);
-				} else if (bailError) {
-					throw new RuntimeException("unknown url for class loading: " + url);
-				}
-			} catch (URISyntaxException e) {
-				if (bailError) {
-					throw new RuntimeException(e);
-				}
-			}
-		}
 	}
 	
 }

@@ -7,16 +7,30 @@ import java.lang.reflect.Parameter;
 import java.util.NoSuchElementException;
 
 /**
- * saves the Result of a {@link Method#invoke(Object, Object...) Method call}. This is either an {@link Object} <code>return</code> result or an {@link Throwable} thrown result.
+ * saves the Result of a {@link Method#invoke(Object, Object...) Method call}.
+ * <p>
+ * a {@link Result} is a {@link #goodResult()} when the method returned normally.<br>
+ * the normal return value will be saved in the field {@link #result} and can be accessed via
+ * {@link #getResult()}. <br>
+ * a {@link Result} is a {@link #badResult()} when the method ended by throwing a
+ * {@link Throwable}.<br>
+ * the {@link Throwable} will be saved in the field {@link #err} and can be accessed via
+ * {@link #getErr()}.
+ * <p>
+ * additional to the return value or the thrown value the {@link Result} also saves the execution
+ * time, needed for the invoked method.<br>
+ * the start and end time can be accessed via {@link #start} and {@link #end}.<br>
+ * to get the time, which had been needed to execute the method the {@link #getTime()} method can be
+ * used.
  * 
  * @author Patrick
- *
  */
 public final class Result {
 	
 	/**
 	 * this saves the return value (or <code>null</code> if it was a <code>void</code> method)<br>
-	 * if the method did not end normally (it throwed an {@link Throwable}) this value will be <code>null</code>
+	 * if the method did not end normally (it throwed an {@link Throwable}) this value will be
+	 * <code>null</code>
 	 */
 	private final Object result;
 	/**
@@ -69,27 +83,31 @@ public final class Result {
 	 * @return the total time needed for this {@link Result}
 	 */
 	public long getTime() {
-		return end - start;
+		return this.end - this.start;
 	}
 	
 	/**
 	 * if this is a 'good' {@link Result} this {@link Method} will return <code>true</code>.<br>
-	 * This is a 'good' {@link Result} if no {@link Throwable} was thrown during the method call or in other words if <code>{@link #err} == null</code> is <code>true</code>
+	 * This is a 'good' {@link Result} if no {@link Throwable} was thrown during the method call or in
+	 * other words if <code>{@link #err} == null</code> is <code>true</code>
 	 * 
-	 * @return <code>true</code> if this {@link Result} is a 'good' {@link Result}, <code>false</code> if not
+	 * @return <code>true</code> if this {@link Result} is a 'good' {@link Result}, <code>false</code>
+	 *             if not
 	 */
 	public boolean goodResult() {
-		return err == null;
+		return this.err == null;
 	}
 	
 	/**
 	 * if this is a 'bad' {@link Result} this {@link Method} will return <code>true</code>.<br>
-	 * This is a 'bad' {@link Result} if a {@link Throwable} was thrown during the method call or in other words if <code>{@link #err} != null</code> is <code>true</code>
+	 * This is a 'bad' {@link Result} if a {@link Throwable} was thrown during the method call or in
+	 * other words if <code>{@link #err} != null</code> is <code>true</code>
 	 * 
-	 * @return <code>true</code> if this {@link Result} is a 'bad' {@link Result}, <code>false</code> if not
+	 * @return <code>true</code> if this {@link Result} is a 'bad' {@link Result}, <code>false</code> if
+	 *             not
 	 */
 	public boolean badResult() {
-		return err != null;
+		return this.err != null;
 	}
 	
 	/**
@@ -101,8 +119,9 @@ public final class Result {
 	 *             if this is a {@link #badResult() bad Result}
 	 */
 	public Object getResult() throws NoSuchElementException {
-		if (err != null) throw new NoSuchElementException("this is no good result!");
-		else return result;
+		if (this.err != null) {
+			throw new NoSuchElementException("this is no good result!");
+		} else return this.result;
 	}
 	
 	/**
@@ -114,29 +133,32 @@ public final class Result {
 	 *             if this is a {@link #goodResult() good Result}
 	 */
 	public Throwable getErr() throws NoSuchElementException {
-		if (err == null) throw new NoSuchElementException("this is no bad result!");
-		else return err;
+		if (this.err == null) {
+			throw new NoSuchElementException("this is no bad result!");
+		} else return err;
 	}
 	
 	@Override
 	public String toString() {
-		if (err != null) {
-			return "error[" + err.getClass().getName() + ':' + err.getMessage() + ']';
-		} else if (result != null) {
-			return "return[" + result + ']';
+		if (this.err != null) {
+			return "error[" + this.err.getClass().getName() + ':' + this.err.getMessage() + ']';
+		} else if (this.result != null) {
+			return "return[" + this.result.getClass() + ':' + this.result + ']';
 		} else {
 			return "returned null or void";
 		}
 	}
 	
 	/**
-	 * prints a detailed represention of this {@link Result}, which contains even some informations which are not saved by this {@link Result} (then the information comes form the
+	 * prints a detailed represention of this {@link Result}, which contains even some informations
+	 * which are not saved by this {@link Result} (then the information comes form the
 	 * {@link Method} {@code me}), when {@code me} is <code>null</code> these informations are skipped
 	 * 
 	 * @param out
 	 *            the {@link PrintStream} on which this {@link Result} should be printed
 	 * @param me
-	 *            the {@link Method} of this {@link Result} with additional information. ignored if <code>null</code>
+	 *            the {@link Method} of this {@link Result} with additional information. ignored if
+	 *            <code>null</code>
 	 * @param indent
 	 *            the normal indention
 	 * @param dindent
@@ -178,32 +200,30 @@ public final class Result {
 				if (me.getReturnType() == Void.TYPE) {
 					out.println("void");
 				} else {
-					out.println("returned " + cn + ": " + result);
+					out.println("returned " + cn + ": " + this.result);
 				}
-				out.println(indent + "time=" + (end - start) + "ms");
+				out.println(indent + "time=" + (this.end - this.start) + "ms");
 				return;
 			} else {
 				out.println("should return " + cn);
 			}
-		} else {
-			if (err == null) {
-				if (result != null) {
-					out.println("returned void or null");
-				} else {
-					out.println("returned: " + result);
-				}
-				out.println(dindent + "time=" + (end - start) + "ms");
-				return;
+		} else if (this.err == null) {
+			if (this.result != null) {
+				out.println("returned void or null");
+			} else {
+				out.println("returned: " + this.result);
 			}
+			out.println(dindent + "time=" + (this.end - this.start) + "ms");
+			return;
 		}
-		out.println(indent + "time=" + (end - start) + "ms");
+		out.println(indent + "time=" + (this.end - this.start) + "ms");
 		// err != null
 		Class <?> zwcls = err.getClass();
 		String cn = zwcls.getCanonicalName();
 		out.println(indent + "exception: " + (cn == null ? zwcls.getName() : cn));
 		out.println(indent + "message: " + err.getMessage());
-		out.println(indent + "localized message: " + err.getLocalizedMessage());
-		out.println(indent + "exeption to string: " + err.toString());
+		out.println(indent + "localized message: " + this.err.getLocalizedMessage());
+		out.println(indent + "exeption to string: " + this.err.toString());
 		out.println(indent + "stack trace:");
 		StackTraceElement[] st = err.getStackTrace();
 		for (int i = 0; i < st.length; i ++ ) {
@@ -213,15 +233,17 @@ public final class Result {
 	}
 	
 	/**
-	 * this method returns a {@link String} with the {@link #err}or or {@link #result} of this {@link Result}. There will be no Prefix or Postfix
+	 * this method returns a {@link String} with the {@link #err}or or {@link #result} of this
+	 * {@link Result}. There will be no Prefix or Postfix
 	 * 
-	 * @return a {@link String} with the {@link #err} or {@link #result} of this {@link Result} without any Prefix or Postfix
+	 * @return a {@link String} with the {@link #err} or {@link #result} of this {@link Result} without
+	 *             any Prefix or Postfix
 	 */
 	public String toSimpleString() {
-		if (err != null) {
-			return err.toString();
-		} else if (result != null) {
-			return result.toString();
+		if (this.err != null) {
+			return this.err.toString();
+		} else if (this.result != null) {
+			return this.result.toString();
 		} else {
 			return "null or void";
 		}

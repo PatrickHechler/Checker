@@ -2,31 +2,45 @@ package de.hechler.patrick.zeugs.check.objects;
 
 import de.hechler.patrick.zeugs.check.interfaces.TwoValues;
 
+/**
+ * a simple implementation of the {@link TwoValues} interface.<br>
+ * this implementation allows public access to the two values.<br>
+ * modifications with the {@link #setValueA(Object)} and {@link #setValueB(Object)}
+ * methods are allowed.
+ * 
+ * @author Patrick
+ * @param <A>
+ *            the type of the first value
+ * @param <B>
+ *            the type of the second value
+ */
 public class TwoValuesImpl <A, B> implements TwoValues <A, B>, Cloneable {
 	
-	private A valueA;
-	private B valueB;
+	/**
+	 * the first value
+	 */
+	public A valueA;
+	/**
+	 * the second value
+	 */
+	public B valueB;
 	
 	public TwoValuesImpl(A valueA, B valueB) {
 		this.valueA = valueA;
 		this.valueB = valueB;
 	}
 	
-	public A getValueA() {
-		return valueA;
-	}
+	@Override
+	public A getValueA() { return valueA; }
 	
-	public void setValueA(A valueA) {
-		this.valueA = valueA;
-	}
+	@Override
+	public B getValueB() { return valueB; }
 	
-	public B getValueB() {
-		return valueB;
-	}
+	@Override
+	public void setValueA(A valueA) { this.valueA = valueA; }
 	
-	public void setValueB(B valueB) {
-		this.valueB = valueB;
-	}
+	@Override
+	public void setValueB(B valueB) { this.valueB = valueB; }
 	
 	@Override
 	public int hashCode() {

@@ -18,7 +18,7 @@ public class AssertionsChecker {
 	
 	@Check
 	public void ckeckAssert() {
-		CheckResult r = new SubAssertionChecker().result();
+		CheckResult r = new SubAssertionChecker().get();
 		assertFalse(r.wentExpected("badAssert"));
 		Result err = r.getResult("badAssert");
 		assertNotNull(err);

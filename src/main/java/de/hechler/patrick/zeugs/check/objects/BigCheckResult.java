@@ -9,36 +9,82 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.BiConsumer;
 
+import de.hechler.patrick.zeugs.check.interfaces.TriConsumer;
+
+/**
+ * this class saves the {@link CheckResult} objects of multiple class checks.
+ * <p>
+ * to get the {@link CheckResult} of a {@link Class} the {@link #get(Class)} method can be used.
+ * <p>
+ * in addition to all {@link CheckResult} objects also the execution time is saved.<br>
+ * to get the execution time {@link #getTime()} can be used.<br>
+ * to get end start of all the {@link BigCheckResult} {@link #start} can be accessed.<br>
+ * to get end time of all class checks {@link #end} can be accessed.
+ * 
+ * @author Patrick
+ */
 public final class BigCheckResult {
 	
-	private Map <String, Class <?>> classes = new HashMap <>();
-	private Map <Class <?>, CheckResult> results = new HashMap <>();
 	/**
-	 * the time when this {@link BigCheckResult} was created
+	 * saves all checked classes refereed with their full names.
 	 */
-	public final long start = System.currentTimeMillis();
+	private final Map <String, Class <?>> classes;
 	/**
-	 * the time when all {@link Checker} objects finished checking for this {@link BigCheckResult}.
+	 * saves all {@link CheckResult} objects of this {@link BigCheckResult}
 	 */
-	private long end;
-	
-	
+	private final Map <Class <?>, CheckResult> results;
+	/**
+	 * the time when the class checks started
+	 */
+	public final long start;
+	/**
+	 * the time when all class checks finished
+	 */
+	public final long end;
 	
 	/**
-	 * sets the end time of this {@link BigCheckResult} to {@link System#currentTimeMillis()}
+	 * creates a new {@link BigCheckResult} with the given values.
+	 * <p>
+	 * to build the maps {@link #classes} and {@link #results} the
+	 * {@link #put(Map, Map, Class, CheckResult)} method is recommended.
 	 * 
+	 * @param classes
+	 *            the map containing all checked {@link Class} objects refereed by their names
+	 * @param results
+	 *            the map containing the {@link CheckResult} objects refereed by the {@link Class}
+	 *            objects
+	 * @param start
+	 *            the time when the {@link BigChecker} started to execute the checks
+	 * @param end
+	 *            the time wen the {@link BigChecker} was finished with the checks
 	 */
-	void setEnd() {
-		this.end = System.currentTimeMillis();
+	public BigCheckResult(Map <String, Class <?>> classes, Map <Class <?>, CheckResult> results, long start, long end) {
+		this.classes = classes;
+		this.results = results;
+		this.start = start;
+		this.end = end;
 	}
 	
 	/**
-	 * returns the end time of this {@link BigCheckResult}
+	 * puts a {@link CheckResult} in the {@link #results} {@link Map} and the {@link Class} with it's
+	 * name in the {@link #classes} {@link Map}
 	 * 
-	 * @return the end time of this {@link BigCheckResult}
+	 * @param classes
+	 *            the map used to save the checked classes refereed by their full names.
+	 * @param results
+	 *            the map used to save the results of the checked classes
+	 * @param cls
+	 *            the class wich was checked
+	 * @param result
+	 *            the result which was created by checking the class
+	 * @return
 	 */
-	public long getEnd() {
-		return end;
+	public static CheckResult put(Map <String, Class <?>> classes, Map <Class <?>, CheckResult> results, Class <?> cls, CheckResult result) {
+		classes.put(cls.getName(), cls);
+		if (cls.getCanonicalName() != null) {
+			classes.put(cls.getCanonicalName(), cls);
+		}
+		return results.put(cls, result);
 	}
 	
 	/**
@@ -46,26 +92,11 @@ public final class BigCheckResult {
 	 * 
 	 * @return the total time needed for this {@link BigCheckResult}
 	 */
-	public long getTime() {
-		return end - start;
-	}
+	public long getTime() { return end - start; }
 	
 	/**
-	 * puts a {@link CheckResult} in the {@link #results} {@link Map} and the {@link Class} with it's name in the {@link #classes} {@link Map}
-	 * 
-	 * @param cls
-	 *            the class wich was checked
-	 * @param result
-	 *            the result which was created by checking the class
-	 * @return
-	 */
-	CheckResult put(Class <?> cls, CheckResult result) {
-		classes.put(cls.getName(), cls);
-		return results.put(cls, result);
-	}
-	
-	/**
-	 * returns the {@link CheckResult} which belongs to the given {@link Class} or <code>null</code> if there is no such {@link CheckResult} in the {@link #results}
+	 * returns the {@link CheckResult} which belongs to the given {@link Class} or <code>null</code> if
+	 * there is no such {@link CheckResult} in the {@link #results}
 	 * 
 	 * @param cls
 	 *            the checked {@link Class}
@@ -76,7 +107,8 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns the {@link CheckResult} which belongs to the given {@link Class}, which is represented by it's full class name, or <code>null</code> if there is no matching
+	 * returns the {@link CheckResult} which belongs to the given {@link Class}, which is represented by
+	 * it's full class name, or <code>null</code> if there is no matching
 	 * {@link Class} in the {@link #classes}.
 	 * 
 	 * @param fullClassName
@@ -93,9 +125,11 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and <code>false</code> if not.
+	 * returns <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and
+	 * <code>false</code> if not.
 	 * 
-	 * @return <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and <code>false</code> if not
+	 * @return <code>true</code> if all {@link CheckResult} went {@link CheckResult#wentExpected()} and
+	 *             <code>false</code> if not
 	 * @see #wentUnexpected()
 	 */
 	public boolean wentExpected() {
@@ -108,9 +142,11 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()} and <code>false</code> if not.
+	 * returns <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()}
+	 * and <code>false</code> if not.
 	 * 
-	 * @return <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()} and <code>false</code> if not
+	 * @return <code>true</code> if any {@link CheckResult} went {@link CheckResult#wentUnexpected()}
+	 *             and <code>false</code> if not
 	 * @see #wentExpected()
 	 */
 	public boolean wentUnexpected() {
@@ -123,22 +159,26 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
+	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class}
+	 * {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
 	 * 
 	 * @param cls
 	 *            the checked class
-	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
+	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class}
+	 *             {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
 	 */
 	public boolean wentExpected(Class <?> cls) {
 		return results.get(cls).wentExpected();
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
+	 * returns <code>true</code> if the {@link CheckResult} of the {@link Class}
+	 * {@link CheckResult#wentExpected() went expected} and <code>false</code> if not.
 	 * 
 	 * @param fullClassName
 	 *            the checked class
-	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class} {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
+	 * @return <code>true</code> if the {@link CheckResult} of the {@link Class}
+	 *             {@link CheckResult#wentExpected() went expected} and <code>false</code> if not
 	 * @see #wentExpected(Class)
 	 */
 	public boolean wentExpected(String fullClassName) {
@@ -147,9 +187,11 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * returns a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected() unexpected}.
+	 * returns a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected()
+	 * unexpected}.
 	 * 
-	 * @return a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected() unexpected}
+	 * @return a {@link Map} of all {@link CheckResult}, which went {@link CheckResult#wentUnexpected()
+	 *             unexpected}
 	 */
 	public Map <Class <?>, CheckResult> allUnexpected() {
 		Map <Class <?>, CheckResult> ret = new HashMap <Class <?>, CheckResult>();
@@ -173,7 +215,8 @@ public final class BigCheckResult {
 	}
 	
 	/**
-	 * performs the given with all {@link CheckResult}s, which went {@link CheckResult#wentUnexpected() unexpected}.
+	 * performs the given with all {@link CheckResult}s, which went {@link CheckResult#wentUnexpected()
+	 * unexpected}.
 	 * 
 	 * @param act
 	 *            the action to be performed
@@ -206,18 +249,14 @@ public final class BigCheckResult {
 		results.forEach((c, r) -> r.forAllUnexpected((m, t) -> act.accept(c, m, t)));
 	}
 	
-	public static interface TriConsumer <A, B, C> {
-		
-		void accept(A a, B b, C c);
-		
-	}
-	
 	/**
-	 * returns a checked {@link Class} from the {@link #classes}, which has the given full class name or <code>null</code>.
+	 * returns a checked {@link Class} from the {@link #classes}, which has the given full class name or
+	 * <code>null</code>.
 	 * 
 	 * @param fullClassName
 	 *            the full class name
-	 * @return a checked {@link Class} from the {@link #classes}, which has the given full class name or <code>null</code>
+	 * @return a checked {@link Class} from the {@link #classes}, which has the given full class name or
+	 *             <code>null</code>
 	 */
 	public Class <?> getClass(String fullClassName) {
 		return classes.get(fullClassName);
@@ -232,6 +271,12 @@ public final class BigCheckResult {
 		print(System.out);
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the given {@link PrintStream} {@code out}
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which this {@link BigCheckResult} should be printed
+	 */
 	public void print(PrintStream out) {
 		List <String> prints = new ArrayList <>();
 		TwoInts ii = new TwoInts();
@@ -242,6 +287,15 @@ public final class BigCheckResult {
 		prints.forEach(s -> out.print(s));
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the given {@link PrintStream} {@code out} and the given
+	 * {@code indention} in spaces (<code>' '<code>)
+	 * 
+	 * @param out
+	 *            the {@link PrintStream} on which this {@link BigCheckResult} should be printed
+	 * @param indention
+	 *            the indention in spaces
+	 */
 	public void print(PrintStream out, int indention) {
 		List <String> prints = new ArrayList <>();
 		TwoInts ii = new TwoInts();
@@ -252,18 +306,49 @@ public final class BigCheckResult {
 		prints.forEach(s -> out.print(s));
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the {@link System#out} stream in a detailed format
+	 * 
+	 * @see #detailedPrint(PrintStream)
+	 */
 	public void detailedPrint() {
 		detailedPrint(System.out, 4, 8);
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the given stream {@code out} in a detailed format
+	 * 
+	 * @param out
+	 *            the print stream which should be used to print this {@link BigCheckResult}
+	 */
 	public void detailedPrint(PrintStream out) {
 		detailedPrint(out, 4, 8);
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the given stream {@code out} in a detailed format and the
+	 * given indention
+	 * 
+	 * @param out
+	 *            the print stream which should be used to print this {@link BigCheckResult}
+	 * @param indention
+	 *            the indention in spaces {@code ' '}
+	 */
 	public void detailedPrint(PrintStream out, int indention) {
 		detailedPrint(out, indention, indention << 1);
 	}
 	
+	/**
+	 * prints this {@link BigCheckResult} on the given stream {@code out} in a detailed format and the
+	 * given indentions
+	 * 
+	 * @param out
+	 *            the print stream which should be used to print this {@link BigCheckResult}
+	 * @param indention
+	 *            the indention in spaces {@code ' '}
+	 * @param doubleIndented
+	 *            the indention in spaces {@code ' '} for double intended lines
+	 */
 	public void detailedPrint(PrintStream out, int indention, int doubleIndented) {
 		out.println("detailed big check result: time=" + (end - start) + "ms");
 		this.forAllCheckResults((cls, r) -> {
@@ -272,15 +357,38 @@ public final class BigCheckResult {
 		});
 	}
 	
-	
+	/**
+	 * prints all unexpected checks in a detailed format on the given stream {@code out}
+	 * 
+	 * @param out
+	 *            the stream on which the unexpected checks should be printed
+	 */
 	public void detailedPrintUnexpected(PrintStream out) {
 		detailedPrintUnexpected(out, 4, 8);
 	}
 	
+	/**
+	 * prints all unexpected checks in a detailed format on the given stream {@code out}
+	 * 
+	 * @param out
+	 *            the stream on which the unexpected checks should be printed
+	 * @param indention
+	 *            the indention in spaces {@code ' '}
+	 */
 	public void detailedPrintUnexpected(PrintStream out, int indention) {
 		detailedPrintUnexpected(out, indention, indention << 1);
 	}
 	
+	/**
+	 * prints all unexpected checks in a detailed format on the given stream {@code out}
+	 * 
+	 * @param out
+	 *            the stream on which the unexpected checks should be printed
+	 * @param indention
+	 *            the indention in spaces {@code ' '}
+	 * @param doubleIndented
+	 *            the indention in spaces {@code ' '} for double intended lines
+	 */
 	public void detailedPrintUnexpected(PrintStream out, int indention, int doubleIndented) {
 		out.println("detailed big check result: time=" + (end - start) + "ms");
 		this.forAllUnexpectedCheckResults((cls, r) -> {
@@ -289,6 +397,12 @@ public final class BigCheckResult {
 		});
 	}
 	
+	/**
+	 * returns the number of {@link CheckResult} objects saved by this {@link BigCheckResult}.
+	 * 
+	 * @return
+	 *             the number of {@link CheckResult} objects saved by this {@link BigCheckResult}.
+	 */
 	public int checkedResultCount() {
 		return this.results.size();
 	}
@@ -296,7 +410,7 @@ public final class BigCheckResult {
 	@Override
 	public String toString() {
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		print(new PrintStream(baos));
+		print(new PrintStream(baos, true));
 		byte[] bytes = baos.toByteArray();
 		return new String(bytes);// default charset on both sides
 	}

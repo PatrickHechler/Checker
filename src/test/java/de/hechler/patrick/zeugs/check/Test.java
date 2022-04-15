@@ -3,7 +3,7 @@ package de.hechler.patrick.zeugs.check;
 import static de.hechler.patrick.zeugs.check.Assert.assertGreather;
 
 import de.hechler.patrick.zeugs.check.objects.BigCheckResult;
-import de.hechler.patrick.zeugs.check.objects.Checker;
+import de.hechler.patrick.zeugs.check.objects.BigChecker;
 
 public class Test {
 	
@@ -13,7 +13,7 @@ public class Test {
 	
 	public static void main(String[] args) throws ClassNotFoundException {
 		System.out.println("[Test]: start all checks");
-		BigCheckResult res = Checker.tryCheckAll(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true);
+		BigCheckResult res = BigChecker.tryGenerateBigChecker(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true).get();
 		assertGreather(res.checkedResultCount(), 0);
 		System.out.println("[Test]: finished all checks");
 		res.print();
