@@ -27,7 +27,7 @@ public final class Result {
 	/**
 	 * the time when this Check startet
 	 */
-	private final long start;
+	public final long start;
 	/**
 	 * the time when the {@link Checker} finished checking for this {@link Result}.
 	 */

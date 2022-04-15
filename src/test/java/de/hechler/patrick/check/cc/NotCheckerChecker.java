@@ -1,10 +1,10 @@
 package de.hechler.patrick.check.cc;
 
-import static de.hechler.patrick.zeugs.check.Checker.assertArrayEquals;
-import static de.hechler.patrick.zeugs.check.Checker.assertEquals;
-import static de.hechler.patrick.zeugs.check.Checker.assertThrows;
-import static de.hechler.patrick.zeugs.check.Checker.assertThrowsAny;
-import static de.hechler.patrick.zeugs.check.Checker.fail;
+import static de.hechler.patrick.zeugs.check.Assert.assertArrayEquals;
+import static de.hechler.patrick.zeugs.check.Assert.assertEquals;
+import static de.hechler.patrick.zeugs.check.Assert.assertThrows;
+import static de.hechler.patrick.zeugs.check.Assert.assertThrowsAny;
+import static de.hechler.patrick.zeugs.check.Assert.fail;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;

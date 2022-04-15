@@ -4,6 +4,7 @@ import de.hechler.patrick.check.cc.AssertionsChecker;
 import de.hechler.patrick.check.cc.CheckerChecker;
 import de.hechler.patrick.check.cc.CheckerCheckingChecker;
 import de.hechler.patrick.check.cc.NotCheckerChecker;
+import de.hechler.patrick.check.cc.OverwriteCheckingChecker;
 import de.hechler.patrick.check.cc.PrivateAccesChecker;
 import de.hechler.patrick.check.cc.ResultParamChecker;
 import de.hechler.patrick.zeugs.check.BigCheckResult;
@@ -15,7 +16,19 @@ public class Test {
 		main(new String[0]);
 	}
 	
-	public static void main(String[] args) {
+	public static void main(String[] args) throws ClassNotFoundException {
+		System.out.println("[Test]: start all checks");
+		BigCheckResult res = Checker.tryCheckAll(false, Test.class.getPackage().getName() + ".cc");
+		System.out.println("[Test]: finished all checks");
+		res.print();
+		if (res.wentUnexpected()) {
+			res.detailedPrintUnexpected(System.out);
+			throw new Error("result is not expected!");
+		}
+	}
+	
+	@Deprecated
+	public static void mainOld(String[] args) throws ClassNotFoundException {
 		// PrintStream o = System.out;
 		// System.setOut(new PrintStream(new OutputStream() {
 		//
@@ -30,7 +43,8 @@ public class Test {
 		//
 		// }));
 		System.out.println("[Test]: start all checks");
-		BigCheckResult res = Checker.checkAll(true, AssertionsChecker.class, CheckerChecker.class, CheckerCheckingChecker.class, NotCheckerChecker.class, PrivateAccesChecker.class, ResultParamChecker.class);
+		BigCheckResult res = Checker.checkAll(true, AssertionsChecker.class, CheckerChecker.class, CheckerCheckingChecker.class, NotCheckerChecker.class, PrivateAccesChecker.class,
+				ResultParamChecker.class, OverwriteCheckingChecker.class);
 		// System.setOut(o);
 		System.out.println("[Test]: finished all checks");
 		res.print();

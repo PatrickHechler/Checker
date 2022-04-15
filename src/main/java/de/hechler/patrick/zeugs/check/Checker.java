@@ -1,15 +1,30 @@
 package de.hechler.patrick.zeugs.check;
 
+import java.io.IOException;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Modifier;
 import java.lang.reflect.Parameter;
+import java.net.MalformedURLException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.nio.file.DirectoryStream;
+import java.nio.file.DirectoryStream.Filter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Objects;
+import java.util.Set;
+import java.util.jar.Attributes.Name;
+import java.util.jar.JarEntry;
+import java.util.jar.JarInputStream;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
@@ -18,25 +33,6 @@ import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ResultParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysEqualsExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerArraysNotEqualsExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerBoolException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerEqualsExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNoInstanceException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotEqualsExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotGreatherEqualExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotGreatherExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotLowerEqualException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotLowerException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNegativeException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotNullExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotPositiveException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNotThrownException;
-import de.hechler.patrick.zeugs.check.exceptions.CheckerNullExeption;
-import de.hechler.patrick.zeugs.check.exceptions.CreationError;
-import de.hechler.patrick.zeugs.check.interfaces.ThrowingRunnable;
 
 public class Checker implements Runnable {
 	
@@ -44,21 +40,48 @@ public class Checker implements Runnable {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
 	}
 	
+	/**
+	 * the instance used to call methods.<br>
+	 * {@link #Checker(Object)}
+	 * 
+	 * @see #Checker()
+	 * @see #Checker(Object)
+	 */
 	private final Object instance;
 	
-	private List <Method> init     = null;
-	private List <Method> start    = null;
-	private List <Method> end      = null;
+	/**
+	 * the {@link List} saving all methods which should be executed before any checks are executed
+	 */
+	private List <Method> init = null;
+	/**
+	 * the {@link List} saving all methods which should be executed every time before the execution of a
+	 * check starts
+	 */
+	private List <Method> start = null;
+	/**
+	 * 
+	 */
+	private List <Method> end = null;
 	private List <Method> finalize = null;
-	private List <Method> check    = null;
+	private List <Method> check = null;
 	
+	/**
+	 * saves the result of this checker or <code>null</code> if the checks has not been executed.<br>
+	 * to execute the checks the {@link #run()} method is used.<br>
+	 * if {@link #result()} is called before the checks has been executed, the {@link #run()} method
+	 * will be automatically be executed.
+	 * 
+	 * @see #result()
+	 * @see #run()
+	 */
 	private CheckResult result;
 	
 	
 	
 	/**
 	 * creates a new {@link Checker}.<br>
-	 * this {@link Checker} will use itself to call methods: {@link Method#invoke(Object, Object...) method.invoke(this, params);}
+	 * this {@link Checker} will use itself to call methods: {@link Method#invoke(Object, Object...)
+	 * method.invoke(this, params);}
 	 */
 	public Checker() {
 		instance = this;
@@ -66,1473 +89,205 @@ public class Checker implements Runnable {
 	
 	/**
 	 * creates a {@link Checker} with the specified <code>instance</code>.<br>
-	 * This {@code instance} will be used to call methods.<br>
+	 * This {@code instance} will be used to call methods.
+	 * <p>
+	 * only methods, which can be called with the given {@code instance} can be called.<br>
+	 * if {@code instance} is <code>null</code> only static methods can be called.<br>
+	 * (static methods can always be called)
+	 * <p>
+	 * if the {@code instance} is <code>null</code>, the {@link #load(Class)} method has to be called
+	 * before the {@link #run()} (or {@link #result()}) method gets invoked.<br>
+	 * if they are invoked before the {@link #load(Class)} method was called and the {@link #instance}
+	 * is <code>null</code> they will throw an {@link IllegalStateException}.
 	 * 
 	 * @param instance
 	 *            the {@code instance} used by this {@link Checker}
-	 * 			
 	 * @see {@link Method#invoke(Object, Object...) method.invoke(instance, params);}
 	 */
 	public Checker(Object instance) {
 		this.instance = instance;
 	}
 	
-	
-	
-	public static void assertNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
-		if (Arrays.deepEquals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, boolean[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, char[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, long[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, int[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, short[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, byte[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, float[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(Object[] a, double[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(boolean[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(char[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(long[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(int[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(short[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(byte[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(float[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(double[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null && b == null) {
-				throw new CheckerArraysEqualsExeption(a, b);
-			}
-			return;
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) return;
-		}
-		throw new CheckerArraysNotEqualsExeption(a, b);
-	}
-	
-	public static void assertNotArrayEquals(boolean[] a, boolean[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(char[] a, char[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(long[] a, long[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(int[] a, int[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(short[] a, short[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(byte[] a, byte[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(float[] a, float[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotArrayEquals(double[] a, double[] b) throws CheckerException {
-		if (Arrays.equals(a, b)) {
-			throw new CheckerArraysEqualsExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertArrayEquals(Object[] a, Object[] b) throws CheckerException {
-		if ( !Arrays.deepEquals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, boolean[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, char[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, long[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, int[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, short[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, byte[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, float[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(Object[] a, double[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !a[i].equals(b[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(boolean[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(char[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(long[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(int[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(short[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(byte[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(float[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	public static void assertArrayEquals(double[] a, Object[] b) throws CheckerException {
-		if (a == null || b == null) {
-			if (a == null ^ b == null) throw new CheckerArraysNotEqualsExeption(a, b);
-			else return;
-		}
-		if (a.length != b.length) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-		for (int i = 0; i < b.length; i ++ ) {
-			if ( !b[i].equals(a[i])) {
-				throw new CheckerArraysNotEqualsExeption(a, b);
-			}
-		}
-	}
-	
-	
-	public static void assertArrayEquals(boolean[] a, boolean[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(char[] a, char[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(long[] a, long[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(int[] a, int[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(short[] a, short[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(byte[] a, byte[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(float[] a, float[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertArrayEquals(double[] a, double[] b) throws CheckerException {
-		if ( !Arrays.equals(a, b)) {
-			throw new CheckerArraysNotEqualsExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertSame(Object a, Object b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertSimpleEquals(Object a, Object b) throws CheckerException {
-		if ( !Objects.equals(a, b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, Object b) throws CheckerException {
-		if ( !Objects.deepEquals(a, b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, boolean b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, char b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, long b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, int b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, short b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, byte b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, float b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(Object a, double b) throws CheckerException {
-		if (a == null || !a.equals(b)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(boolean a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(char a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(long a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(int a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(short a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(byte a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(float a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(double a, Object b) throws CheckerException {
-		if (b == null || !b.equals(a)) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(boolean a, boolean b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(char a, char b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(long a, long b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(int a, int b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(short a, short b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(byte a, byte b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(float a, float b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertEquals(double a, double b) throws CheckerException {
-		if (a != b) {
-			throw new CheckerNotEqualsExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertNotSame(Object a, Object b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertSimpleNotEquals(Object a, Object b) throws CheckerException {
-		if (Objects.equals(a, b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, Object b) throws CheckerException {
-		if (Objects.deepEquals(a, b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, boolean b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, char b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, long b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, int b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, short b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, byte b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, float b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(Object a, double b) throws CheckerException {
-		if (a.equals(b)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(boolean a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(char a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(long a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(int a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(short a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(byte a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(float a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(double a, Object b) throws CheckerException {
-		if (b.equals(a)) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(boolean a, boolean b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(char a, char b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(long a, long b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(int a, int b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(short a, short b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(byte a, byte b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(float a, float b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	public static void assertNotEquals(double a, double b) throws CheckerException {
-		if (a == b) {
-			throw new CheckerEqualsExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertLowerEqual(byte a, byte b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	public static void assertLowerEqual(short a, short b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	public static void assertLowerEqual(int a, int b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	public static void assertLowerEqual(long a, long b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	public static void assertLowerEqual(float a, float b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	public static void assertLowerEqual(double a, double b) throws CheckerException {
-		if (a > b) {
-			throw new CheckerNotLowerEqualException(a, b);
-		}
-	}
-	
-	
-	public static void assertLower(byte a, byte b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	public static void assertLower(short a, short b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	public static void assertLower(int a, int b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	public static void assertLower(long a, long b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	public static void assertLower(float a, float b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	public static void assertLower(double a, double b) throws CheckerException {
-		if (a >= b) {
-			throw new CheckerNotLowerException(a, b);
-		}
-	}
-	
-	
-	public static void assertGreatherEqual(byte a, byte b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	public static void assertGreatherEqual(short a, short b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	public static void assertGreatherEqual(int a, int b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	public static void assertGreatherEqual(long a, long b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	public static void assertGreatherEqual(float a, float b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	public static void assertGreatherEqual(double a, double b) throws CheckerException {
-		if (a < b) {
-			throw new CheckerNotGreatherEqualExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertGreather(byte a, byte b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	public static void assertGreather(short a, short b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	public static void assertGreather(int a, int b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	public static void assertGreather(long a, long b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	public static void assertGreather(float a, float b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	public static void assertGreather(double a, double b) throws CheckerException {
-		if (a <= b) {
-			throw new CheckerNotGreatherExeption(a, b);
-		}
-	}
-	
-	
-	public static void assertNull(Object a) throws CheckerException {
-		if (a != null) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(byte a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(short a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(int a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(long a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(float a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	public static void assertNull(double a) throws CheckerException {
-		if (a != 0) {
-			throw new CheckerNotNullExeption(a);
-		}
-	}
-	
-	
-	public static void assertNotNull(Object a) throws CheckerException {
-		if (a == null) {
-			throw new CheckerNullExeption();
-		}
-	}
-	
-	public static void assertNotNull(byte a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Byte.TYPE);
-		}
-	}
-	
-	public static void assertNotNull(short a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Short.TYPE);
-		}
-	}
-	
-	public static void assertNotNull(int a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Integer.TYPE);
-		}
-	}
-	
-	public static void assertNotNull(long a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Long.TYPE);
-		}
-	}
-	
-	public static void assertNotNull(float a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Float.TYPE);
-		}
-	}
-	
-	public static void assertNotNull(double a) throws CheckerException {
-		if (a == 0) {
-			throw new CheckerNullExeption(Double.TYPE);
-		}
-	}
-	
-	public static void assertPositive(byte a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertPositive(short a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertPositive(int a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertPositive(long a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertPositive(float a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertPositive(double a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotPositiveException(a);
-		}
-	}
-	
-	public static void assertNegative(byte a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	public static void assertNegative(short a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	public static void assertNegative(int a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	public static void assertNegative(long a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	public static void assertNegative(float a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	public static void assertNegative(double a) throws CheckerException {
-		if (a <= 0) {
-			throw new CheckerNotNegativeException(a);
-		}
-	}
-	
-	
-	public static void assertTrue(Boolean b) throws CheckerException {
-		if (b != true) throw new CheckerBoolException(b);
-	}
-	
-	public static void assertFalse(Boolean b) throws CheckerException {
-		if (b != false) throw new CheckerBoolException(b);
-	}
-	
-	public static void assertTrue(boolean b) throws CheckerException {
-		if ( !b) throw new CheckerBoolException(b);
-	}
-	
-	public static void assertFalse(boolean b) throws CheckerException {
-		if (b) throw new CheckerBoolException(b);
-	}
-	
-	
-	public static void assertExactClass(Class <?> cls, Object o) throws CheckerException {
-		if (cls != o.getClass()) throw new CheckerNoInstanceException(cls, o, null);
-	}
-	
-	public static void assertInstanceOf(Class <?> cls, Object o) throws CheckerException {
-		if ( !cls.isInstance(o)) throw new CheckerNoInstanceException(cls, o);
-	}
-	
-	public static void assertsSubClass(Class <?> cls, Class <?> subClas) throws CheckerException {
-		if ( !cls.isAssignableFrom(subClas)) throw new CheckerNoInstanceException(cls, subClas);
-	}
-	
-	
-	
-	public static void assertThrowsAny(String msg, ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException();
-			throw thrown;
-		} catch (Throwable err) {
-			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-			else if ( !Objects.equals(msg, err.getMessage())) throw new CheckerNotThrownException(msg, err.getMessage(), err.getClass());
-		}
-	}
-	
-	public static <T extends Throwable> void assertThrows(String msg, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException(assertThrown);
-			throw thrown;
-		} catch (Throwable err) {
-			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-			Class <? extends Throwable> cls = err.getClass();
-			if (cls != assertThrown) {
-				if ( !assertThrown.isAssignableFrom(cls)) {
-					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
-				}
-			}
-			if ( !Objects.equals(msg, err.getMessage())) {
-				throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
-			}
-		}
-	}
-	
-	public static <T extends Throwable> void assertThrows(String msg, boolean exactClass, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException(assertThrown);
-			throw thrown;
-		} catch (Throwable err) {
-			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-			Class <? extends Throwable> cls = err.getClass();
-			if (cls != assertThrown) {
-				if (exactClass) {
-					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls, true);
-				}
-				if ( !assertThrown.isAssignableFrom(cls)) {
-					throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls, false);
-				}
-			}
-			if ( !Objects.equals(msg, err.getMessage())) {
-				throw new CheckerNotThrownException(msg, assertThrown, err.getMessage(), cls);
-			}
-		}
-	}
-	
-	public static void assertThrowsAny(ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException();
-			throw thrown;
-		} catch (Throwable ignore) {
-			if (thrown == ignore) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-		}
-	}
-	
-	public static <T extends Throwable> void assertThrows(Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException(assertThrown);
-			throw thrown;
-		} catch (Throwable err) {
-			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-			Class <? extends Throwable> cls = err.getClass();
-			if (cls != assertThrown) {
-				if ( !assertThrown.isAssignableFrom(cls)) {
-					throw new CheckerNotThrownException(assertThrown, cls);
-				}
-			}
-		}
-	}
-	
-	public static <T extends Throwable> void assertThrows(boolean exactClass, Class <T> assertThrown, ThrowingRunnable <?> r) throws CheckerException {
-		CheckerNotThrownException thrown = null;
-		try {
-			r.run();
-			thrown = new CheckerNotThrownException(assertThrown);
-			throw thrown;
-		} catch (Throwable err) {
-			if (thrown == err) throw thrown;// Do not catch self thrown exception (CheckerNotThrownException)
-			Class <? extends Throwable> cls = err.getClass();
-			if (cls != assertThrown) {
-				if (exactClass) {
-					throw new CheckerNotThrownException(assertThrown, cls, true);
-				}
-				if ( !assertThrown.isAssignableFrom(cls)) {
-					throw new CheckerNotThrownException(assertThrown, cls, false);
-				}
-			}
-		}
-	}
-	
-	
-	public static void fail(String msg) throws CheckerFailException {
-		throw new CheckerFailException(msg);
-	}
-	
-	public static void fail() throws CheckerFailException {
-		throw new CheckerFailException("fail");
-	}
-	
-	public static void fail(Throwable cause) throws CheckerFailException {
-		throw new CheckerFailException(cause);
-	}
-	
-	public static void fail(String msg, Throwable cause) throws CheckerFailException {
-		throw new CheckerFailException(msg, cause);
-	}
-	
-	
-	
-	public boolean checkedAlready() {
+	/**
+	 * returns <code>true</code> if the checks has already been executed and <code>false</code> if the
+	 * checker still needs to execute the checks to generate the {@link #result} of this checker.
+	 * 
+	 * @return
+	 *             returns <code>true</code> if the checks has already been executed and
+	 *             <code>false</code> if not
+	 */
+	public final boolean checkedAlready() {
 		return result == null;
 	}
 	
-	public CheckResult result() {
+	/**
+	 * returns the {@link #result} of this checker.<br>
+	 * if the {@link #result} has not yet been generated the {@link #run()} method is used to generate
+	 * the {@link #result}.
+	 * 
+	 * @return the {@link #result} of this checker
+	 */
+	public final CheckResult result() {
 		if (result == null) {
 			run();
 		}
 		return result;
 	}
 	
+	/**
+	 * executes all startup methods (methods annotated with {@link Start}, where
+	 * {@link Start#onlyOnce()} is <code>true</code>)<br>
+	 * then all checks are executed.<br>
+	 * before each check method all {@link Start} methods with {@link Start#onlyOnce()} set to
+	 * <code>false</code> are executed.<br>
+	 * then the check current is executed (some method annotated with {@link Check}).<br>
+	 * after the check all {@link End} methods with {@link End#onlyOnce()} set to <code>false</code> are
+	 * executed.<br>
+	 * after the execution of all {@link Check} methods the {@link End} methods annotated with
+	 * {@link End#onlyOnce()} set to <code>true</code> are executed.
+	 * <p>
+	 * if this method is run multiple times the checks are executed multiple times.<br>
+	 * to check if the checks already has been executed use {@link #checkedAlready()}.<br>
+	 * this method is automatically invoked, when {@link #result()} is invoked and the checks have not
+	 * been executed.
+	 * <p>
+	 * this method will not create new {@link Thread} objects, so all checks/starts/ends are executed
+	 * with the {@link Thread} executing this method.<br>
+	 * this also means the checked class can use its member variables without caring about the other
+	 * checks.
+	 * <p>
+	 * this method throws a IllegalStateException if this checker has not been loaded
+	 * ({@link #load(Class)}) and was created with a null {@link #instance} (using the
+	 * {@link #Checker(Object)}
+	 * 
+	 * @throws IllegalStateException
+	 *             if this checker has not been loaded ({@link #load(Class)}) and was created with a
+	 *             <code>null</code> {@link #instance} (using the {@link #Checker(Object)} constructor
+	 *             with a <code>null</code> argument)
+	 */
 	@Override
-	public final void run() {
+	public final void run() throws IllegalStateException {
 		if (this.init == null) {
-			load(instance.getClass());
+			if (this.instance == null) {
+				throw new IllegalStateException("this checker is not loaded and I have a null instance.");
+			}
+			load(this.instance.getClass());
 		}
 		this.result = new CheckResult();
-		this.init.forEach(m -> run(m, instance, null, null));
+		this.init.forEach(m -> run(m, this.instance, null, null));
 		this.check.forEach(m -> {
-			this.start.forEach(r -> run(r, instance, null, m));
-			Result res = run(m, instance, null, null);
+			this.start.forEach(r -> run(r, this.instance, null, m));
+			Result res = run(m, this.instance, null, null);
 			this.result.set(m, res);
-			this.end.forEach(r -> run(r, instance, res, m));
+			this.end.forEach(r -> run(r, this.instance, res, m));
 		});
-		this.finalize.forEach(m -> run(m, instance, null, null));
+		this.finalize.forEach(m -> run(m, this.instance, null, null));
 		this.result.setEnd(System.currentTimeMillis());
 	}
 	
 	
-	private static Result run(final Method m, Object invoker, Result checked, Method notRun) throws ClassCastException {
-		Result retVal;
-		Parameter[] params = m.getParameters();
-		Object[] ps = new Object[params.length];
-		for (int i = 0; i < params.length; i ++ ) {
-			ParamCreater pc = params[i].getAnnotation(ParamCreater.class);
-			MethodParam mp = params[i].getAnnotation(MethodParam.class);
-			ResultParam rp = params[i].getAnnotation(ResultParam.class);
-			Class <?> type = params[i].getType();
-			if (pc != null) {
-				String[] method = pc.method();
-				Class <?>[] classes = new Class[method.length - 1];
-				for (int ii = 0; ii < classes.length; ii ++ ) {
-					try {
-						classes[ii] = Class.forName(method[ii + 1]);
-					} catch (ClassNotFoundException e) {
-						throw new InternalError("could not find class of Parameter ('" + method[ii + 1] + "'): " + e.getMessage(), e);
-					}
-				}
-				Method met;
-				try {
-					met = invoker.getClass().getDeclaredMethod(method[0], classes);
-				} catch (NoSuchMethodException | SecurityException e) {
-					throw new InternalError("could not get Method ('" + method[0] + "(" + Arrays.deepToString(method) + ")'): " + e.getMessage(), e);
-				}
-				boolean flag = met.isAccessible();
-				met.setAccessible(true);
-				Result r = run(met, invoker, null, null);
-				if (r.badResult()) {
-					throw new InternalError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
-				}
-				met.setAccessible(flag);
-				ps[i] = r.getResult();
-			} else if (rp != null) {
-				if ( !type.isAssignableFrom(Result.class)) {
-					throw new ClassCastException("can not cast from " + type.getCanonicalName() + " to " + Result.class.getCanonicalName());
-				}
-				ps[i] = checked;
-			} else if (mp != null) {
-				if ( !type.isAssignableFrom(Method.class)) {
-					throw new ClassCastException("can not cast from " + type.getCanonicalName() + " to " + Method.class.getCanonicalName());
-				}
-				ps[i] = notRun;
-			} else if (type.isPrimitive()) {
-				if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
-				else if (type == Integer.TYPE) ps[i] = 0;
-				else if (type == Double.TYPE) ps[i] = 0.0d;
-				else if (type == Character.TYPE) ps[i] = '\0';
-				else if (type == Byte.TYPE) ps[i] = (Byte) (byte) 0;
-				else if (type == Long.TYPE) ps[i] = 0l;
-				else if (type == Float.TYPE) ps[i] = 0.0f;
-				else if (type == Short.TYPE) ps[i] = (Short) (short) 0;
-				else throw new InternalError("unknown primitiv param: '" + type + '\'');
-			} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type.getComponentType(), 0);
-			else ps[i] = null;
-		}
+	private static Result run(final Method m, Object invoker, Result checked, Method notRun) {
+		Result result;
 		long start = System.currentTimeMillis();
 		try {
+			Parameter[] params = m.getParameters();
+			Object[] ps = new Object[params.length];
+			for (int i = 0; i < params.length; i ++ ) {
+				Parameter param = params[i];
+				ps[i] = getParam(invoker, checked, notRun, param, m.getDeclaringClass());
+			}
 			boolean flag = m.isAccessible();
 			m.setAccessible(true);
 			start = System.currentTimeMillis();
 			Object res = m.invoke(invoker, ps);
 			long end = System.currentTimeMillis();
 			m.setAccessible(flag);
-			retVal = new Result(res, start, end);
-		} catch (IllegalAccessException e) {
-			throw new AssertionError("can't acces method: " + m.getName(), e);
-		} catch (IllegalArgumentException e) {
-			throw new AssertionError("can't check method: '" + m.getName() + "' params: " + m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
-				+ "   ||| my params: {" + Arrays.deepToString(ps) + '}', e);
-		} catch (InvocationTargetException e) {
+			result = new Result(res, start, end);
+			// } catch (IllegalAccessException | IllegalArgumentException e) {
+			// throw new AssertionError("can't run method: '" + m.getName() + "' params: " +
+			// m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
+			// + " ||| my params: {" + Arrays.deepToString(ps) + "} error message: " + e.getMessage(), e);
+		} catch (InvocationTargetException | NullPointerException | IllegalAccessException | IllegalArgumentException | AssertionError e) {
 			long end = System.currentTimeMillis();
-			Throwable err = e.getCause();
-			retVal = new Result(err, start, end);
+			Throwable err;
+			if (e instanceof InvocationTargetException) {
+				err = e.getCause();
+			} else {
+				err = e;
+			}
+			if (err instanceof ThreadDeath) {
+				throw (ThreadDeath) err;
+			}
+			result = new Result(err, start, end);
 		}
-		return retVal;
+		return result;
 	}
 	
-	private void load(Class <?> clas) {
+	private static Object getParam(Object invoker, Result checked, Method notRun, Parameter param, Class <?> cls) throws AssertionError, ClassCastException {
+		ParamCreater pc = param.getAnnotation(ParamCreater.class);
+		MethodParam mp = param.getAnnotation(MethodParam.class);
+		ResultParam rp = param.getAnnotation(ResultParam.class);
+		Class <?> type = param.getType();
+		if (pc != null && !pc.disabled()) {
+			String method = pc.method();
+			String[] paramClassNames = pc.methodParams();
+			Class <?>[] paramClasses = new Class[paramClassNames.length];
+			for (int i = 0; i < paramClasses.length; i ++ ) {
+				try {
+					paramClasses[i] = Class.forName(paramClassNames[i], false, cls.getClassLoader());
+				} catch (ClassNotFoundException e) {
+					throw new AssertionError("could not find class of Parameter ('" + paramClassNames[i] + "'): " + e.getMessage(), e);
+				}
+			}
+			Method met;
+			try {
+				met = cls.getDeclaredMethod(method, paramClasses);
+			} catch (NoSuchMethodException | SecurityException e) {
+				throw new AssertionError("could not get Method (" + method + " params: " + Arrays.deepToString(paramClassNames) + "): " + e.getMessage(), e);
+			}
+			boolean flag = met.isAccessible();
+			met.setAccessible(true);
+			Result r = run(met, invoker, null, null);
+			if (r.badResult()) {
+				throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
+			}
+			met.setAccessible(flag);
+			return type.cast(r.getResult());
+		} else if (rp != null && !rp.disabled()) {
+			return type.cast(checked);
+		} else if (mp != null && !mp.disabled()) {
+			return type.cast(notRun);
+		} else if (type.isPrimitive()) {
+			if (type == Boolean.TYPE) return Boolean.FALSE;
+			else if (type == Integer.TYPE) return 0;
+			else if (type == Double.TYPE) return 0.0d;
+			else if (type == Character.TYPE) return '\0';
+			else if (type == Byte.TYPE) return (Byte) (byte) 0;
+			else if (type == Long.TYPE) return 0l;
+			else if (type == Float.TYPE) return 0.0f;
+			else if (type == Short.TYPE) return (Short) (short) 0;
+			else throw new InternalError("unknown primitiv param: '" + type + '\'');
+		} else if (param.isVarArgs()) return Array.newInstance(type.getComponentType(), 0);
+		else return null;
+	}
+	
+	/**
+	 * prepares this checker to execute the checks from this class.
+	 * <p>
+	 * if this checker has been instantiated with the {@link #Checker(Object)} and a <code>null</code>
+	 * argument this method has to be executed explicit.<br>
+	 * if this {@link Checker} has been instantiated with the {@link #generateChecker(Class)} this
+	 * method is already invoked if the checker has a <code>null</code>
+	 * {@link #instance}.<br>
+	 * if this checker has a non <code>null</code> {@link #instance} and this method has not been
+	 * called, this method will automatically been called, when the {@link #run()} method is invoked.
+	 * 
+	 * @param clas
+	 *            the class for which the checker should be prepared.
+	 */
+	public final void load(Class <?> clas) {
 		// try {
-		clas.getClassLoader().setClassAssertionStatus(clas.getCanonicalName(), true);
+		clas.getClassLoader().setClassAssertionStatus(clas.getName(), true);
 		// } catch (Throwable e) { // sollte eigentlich nicht passieren
 		// e.printStackTrace();
 		// }
@@ -1572,16 +327,14 @@ public class Checker implements Runnable {
 			}
 			Check c = m.getAnnotation(Check.class);
 			if (c != null && !c.disabled()) {
-				if ( !c.disabled()) {
-					this.check.add(m);
-				}
+				this.check.add(m);
 			}
 		}
 	}
 	
 	/**
-	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
-	 * 
+	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not
+	 * {@code extend} {@link Checker}<br>
 	 * the generated {@link Checker} will be used to return the {@link CheckResult}.
 	 * 
 	 * @param clas
@@ -1589,73 +342,16 @@ public class Checker implements Runnable {
 	 * @return the result of the created {@link Checker}
 	 * @implNote it behaves like <code>{@link #generateChecker(Class)}.{@link #result()}</code>
 	 */
-	public static CheckResult check(final Class <?> clas) throws CreationError {
+	public static CheckResult check(final Class <?> clas) {
 		try {
-			Class <?> cls = clas;
-			Start s;
-			boolean noStart = true;
-			Constructor <?>[] cs = cls.getConstructors();
-			for (Constructor <?> c : cs) {
-				s = c.getAnnotation(Start.class);
-				if (s == null) continue;
-				if (s.disabled()) continue;
-				noStart = false;
-				Parameter[] params = c.getParameters();
-				Object[] ps = new Object[params.length];
-				for (int i = 0; i < params.length; i ++ ) {
-					ParamCreater pc = params[i].getAnnotation(ParamCreater.class);
-					Class <?> type = params[i].getType();
-					if (pc != null) {
-						String[] method = pc.method();
-						Class <?>[] classes = new Class[method.length - 1];
-						for (int ii = 0; ii < classes.length; ii ++ ) {
-							classes[ii] = Class.forName(method[ii + 1]);
-						}
-						Method met = clas.getDeclaredMethod(method[0], classes);
-						boolean flag = met.isAccessible();
-						met.setAccessible(true);
-						Result r = run(met, null, null, null);
-						met.setAccessible(flag);
-						if (r.badResult()) {
-							throw new CreationError(met, r);
-						}
-						ps[i] = r.getResult();
-					} else if (type.isPrimitive()) {
-						if (type == Boolean.TYPE) ps[i] = Boolean.FALSE;
-						else if (type == Integer.TYPE) ps[i] = (Integer) 0;
-						else if (type == Double.TYPE) ps[i] = (Double) 0.0d;
-						else if (type == Character.TYPE) ps[i] = (Character) '\0';
-						else if (type == Byte.TYPE) ps[i] = (Byte) (byte) 0;
-						else if (type == Long.TYPE) ps[i] = (Long) 0l;
-						else if (type == Float.TYPE) ps[i] = (Float) 0.0f;
-						else if (type == Short.TYPE) ps[i] = (Short) (short) 0;
-						else throw new InternalError("unknown primitiv param: '" + type + '\'');
-					} else if (params[i].isVarArgs()) ps[i] = Array.newInstance(type, 0);
-					else ps[i] = null;
-				}
-				Object instance = c.newInstance(ps);
-				if (instance instanceof Checker) {
-					return ((Checker) instance).result();
-				} else {
-					return new Checker(instance).result();
-				}
+			Object instance = createInstance(clas);
+			if (instance instanceof Checker) {
+				return ((Checker) instance).result();
+			} else {
+				Checker checker = new Checker(instance);
+				return checker.result();
 			}
-			Constructor <?> c = cls.getConstructor();
-			s = c.getAnnotation(Start.class);
-			if ( (s == null && noStart) && (s == null || !s.disabled())) {
-				boolean flag = c.isAccessible();
-				c.setAccessible(true);
-				// c.canAccess(null);
-				Object instance = c.newInstance();
-				c.setAccessible(flag);
-				if (instance instanceof Checker) {
-					return ((Checker) instance).result();
-				} else {
-					return new Checker(instance).result();
-				}
-			}
-		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException
-			| ClassNotFoundException ignore) {
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
 			// make with 'static' checker (error on instance methods)
 		}
 		Checker c = new Checker(null);
@@ -1664,32 +360,94 @@ public class Checker implements Runnable {
 	}
 	
 	/**
-	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
+	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not
+	 * {@code extend} {@link Checker}<br>
 	 * 
 	 * @param clas
 	 *            the {@link Class} to be checked
 	 * @return the result of the created {@link Checker}
 	 */
 	public static Checker generateChecker(final Class <?> clas) {
-		if (Checker.class.isAssignableFrom(clas)) {
-			try {
-				@SuppressWarnings("unchecked")
-				Class <? extends Checker> cls = (Class <? extends Checker>) clas;
-				Constructor <? extends Checker> c = cls.getConstructor();
-				return c.newInstance();
-			} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {}
+		try {
+			Object instance = createInstance(clas);
+			if (instance instanceof Checker) {
+				return (Checker) instance;
+			} else {
+				Checker checker = new Checker(instance);
+				checker.load(clas);
+				return checker;
+			}
+		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
+			// make with 'static' checker (error on instance methods)
 		}
-		Checker c = new Checker();
+		Checker c = new Checker(null);
 		c.load(clas);
 		return c;
 	}
 	
+	private static <T> T createInstance(final Class <T> clas)
+			throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		Object firstParam = null;
+		if (clas.isMemberClass()) {
+			if ( !Modifier.isStatic(clas.getModifiers())) {
+				Class <?> outerClass = clas.getDeclaringClass();
+				firstParam = createInstance(outerClass);
+			}
+		}
+		Constructor <?>[] cs = clas.getDeclaredConstructors();
+		for (Constructor <?> c : cs) {
+			Start s = c.getAnnotation(Start.class);
+			if (s == null) continue;
+			if (s.disabled()) continue;
+			return create(clas, c, firstParam);
+		}
+		for (Constructor <?> c : cs) {
+			Start s = c.getAnnotation(Start.class);
+			if (s != null && s.disabled()) continue;
+			return create(clas, c, firstParam);
+		}
+		Constructor <?> c = cs[0];
+		return create(clas, c, firstParam);
+	}
+	
+	private static <T> T create(final Class <T> clas, Constructor <?> c, Object firstParam)
+			throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException {
+		Parameter[] params = c.getParameters();
+		Object[] ps = new Object[params.length];
+		int i = 0;
+		if (firstParam != null) {
+			ps[0] = firstParam;
+			i ++ ;
+		}
+		for (; i < params.length; i ++ ) {
+			ps[i] = getParam(null, null, null, params[i], clas);
+		}
+		boolean flag = c.isAccessible();
+		c.setAccessible(true);
+		Object instance = c.newInstance(ps);
+		c.setAccessible(flag);
+		return clas.cast(instance);
+	}
+	
+	/**
+	 * works like {@link #checkAll(boolean, Class...)}, but instead of an class array this class uses
+	 * the full class names and the given {@link ClassLoader} to get the classes which should be
+	 * checked.
+	 * 
+	 * @param needEnabedCheckClass
+	 *            if only classes annotated with {@link CheckClass} should be checked
+	 * @param classLoader
+	 *            the loader used to load classes
+	 * @param fullClassNames
+	 *            an array containing all full class names from the classes which should be checked
+	 * @return the result of all checks
+	 */
 	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String... fullClassNames) {
 		BigCheckResult bcr = new BigCheckResult();
 		for (String fcn : fullClassNames) {
 			try {
 				Class <?> cls;
-				cls = Class.forName(fcn, true, classLoader);
+				cls = Class.forName(fcn, false, classLoader);
 				if (needEnabedCheckClass) {
 					CheckClass cc = cls.getAnnotation(CheckClass.class);
 					if (cc == null) continue;
@@ -1704,44 +462,24 @@ public class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, ClassLoader classLoader, String[] fullClassNames, Class <?>... check) {
-		BigCheckResult bcr = new BigCheckResult();
-		for (String fcn : fullClassNames) {
-			try {
-				Class <?> cls;
-				cls = Class.forName(fcn, true, classLoader);
-				if (needEnabedCheckClass) {
-					CheckClass cc = cls.getAnnotation(CheckClass.class);
-					if (cc == null) continue;
-					if (cc.disabled()) continue;
-				}
-				bcr.put(cls, check(cls));
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		for (Class <?> cls : check) {
-			if (needEnabedCheckClass) {
-				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) {
-					continue;
-				}
-				if (cc.disabled()) {
-					continue;
-				}
-			}
-			bcr.put(cls, check(cls));
-		}
-		bcr.setEnd(System.currentTimeMillis());
-		return bcr;
-	}
-	
+	/**
+	 * works like {@link #checkAll(boolean, ClassLoader, String...)}, but uses to load classes the class
+	 * loader of the {@link Checker} class.
+	 * 
+	 * @param needEnabedCheckClass
+	 *            if only classes annotated with {@link CheckClass} should be checked
+	 * @param classes
+	 *            the array containing all classes which should be checked
+	 * @return the result of all checks
+	 * @see #checkAll(boolean, Iterator)
+	 */
 	public static BigCheckResult checkAll(boolean needEnabedCheckClass, String... fullClassNames) {
 		BigCheckResult bcr = new BigCheckResult();
+		ClassLoader loader = Checker.class.getClassLoader();
 		for (String fcn : fullClassNames) {
 			try {
 				Class <?> cls;
-				cls = Class.forName(fcn);
+				cls = Class.forName(fcn, false, loader);
 				if (needEnabedCheckClass) {
 					CheckClass cc = cls.getAnnotation(CheckClass.class);
 					if (cc == null) continue;
@@ -1756,23 +494,20 @@ public class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, String[] fullClassNames, Class <?>... check) {
+	/**
+	 * works like {@link #checkAll(boolean, Iterator)}, but uses instead of an {@link Iterator} an
+	 * {@link Class} array.
+	 * 
+	 * @param needEnabedCheckClass
+	 *            if only classes annotated with {@link CheckClass} should be checked
+	 * @param classes
+	 *            the array containing all classes which should be checked
+	 * @return the result of all checks
+	 * @see #checkAll(boolean, Iterator)
+	 */
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Class <?>... classes) {
 		BigCheckResult bcr = new BigCheckResult();
-		for (String fcn : fullClassNames) {
-			try {
-				Class <?> cls;
-				cls = Class.forName(fcn);
-				if (needEnabedCheckClass) {
-					CheckClass cc = cls.getAnnotation(CheckClass.class);
-					if (cc == null) continue;
-					if (cc.disabled()) continue;
-				}
-				bcr.put(cls, check(cls));
-			} catch (ClassNotFoundException e) {
-				e.printStackTrace();
-			}
-		}
-		for (Class <?> cls : check) {
+		for (Class <?> cls : classes) {
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
 				if (cc == null) {
@@ -1788,9 +523,21 @@ public class Checker implements Runnable {
 		return bcr;
 	}
 	
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Class <?>... check) {
+	/**
+	 * checks all classes from the iterator.<br>
+	 * if {@code needEnabledCheckClass} is <code>true</code> only classes which are annotated with
+	 * {@link CheckClass} and are not {@link CheckClass#disabled()} are checked.
+	 * 
+	 * @param needEnabedCheckClass
+	 *            if only classes annotated with {@link CheckClass} should be checked
+	 * @param iter
+	 *            the {@link Iterator} which iterates over all {@link Class} objects to check
+	 * @return the result of all executed checks
+	 */
+	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> iter) {
 		BigCheckResult bcr = new BigCheckResult();
-		for (Class <?> cls : check) {
+		while (iter.hasNext()) {
+			Class <?> cls = iter.next();
 			if (needEnabedCheckClass) {
 				CheckClass cc = cls.getAnnotation(CheckClass.class);
 				if (cc == null) {
@@ -1800,31 +547,295 @@ public class Checker implements Runnable {
 					continue;
 				}
 			}
-			bcr.put(cls, check(cls));
-		}
-		bcr.setEnd(System.currentTimeMillis());
-		return bcr;
-	}
-	
-	public static BigCheckResult checkAll(boolean needEnabedCheckClass, Iterator <Class <?>> check) {
-		BigCheckResult bcr = new BigCheckResult();
-		while (check.hasNext()) {
-			Class <?> cls = check.next();
-			if (needEnabedCheckClass) {
-				CheckClass cc = cls.getAnnotation(CheckClass.class);
-				if (cc == null) {
-					continue;
-				}
-				if (cc.disabled()) {
-					continue;
-				}
-			}
-			
 			CheckResult cr = check(cls);
 			bcr.put(cls, cr);
 		}
 		bcr.setEnd(System.currentTimeMillis());
 		return bcr;
+	}
+	
+	/**
+	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
+	 * {@code tryCheckAll(subPackages, package.getName(), Checker.class.getClassLoader())}.
+	 * 
+	 * @param subPackages
+	 *            <code>true</code> if also classes in subPackages should be loaded
+	 * @param pakage
+	 *            the package
+	 * @param loader
+	 *            the loader used to find/load classes
+	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
+	 */
+	public static BigCheckResult tryCheckAll(boolean subPackages, Package pakage) {
+		return tryCheckAll(subPackages, pakage.getName(), Checker.class.getClassLoader());
+	}
+	
+	/**
+	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
+	 * {@code tryCheckAll(subPackages, package, Checker.class.getClassLoader())}.
+	 * 
+	 * @param subPackages
+	 *            <code>true</code> if also classes in subPackages should be loaded
+	 * @param pakage
+	 *            the name of the package (like {@link Package#getName()})
+	 * @param loader
+	 *            the loader used to find/load classes
+	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
+	 */
+	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage) {
+		return tryCheckAll(subPackages, pakage, Checker.class.getClassLoader());
+	}
+	
+	/**
+	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
+	 * {@code tryCheckAll(subPackages, package.getName(), loader)}.
+	 * 
+	 * @param subPackages
+	 *            <code>true</code> if also classes in subPackages should be loaded
+	 * @param pakage
+	 *            the package
+	 * @param loader
+	 *            the loader used to find/load classes
+	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
+	 */
+	public static BigCheckResult tryCheckAll(boolean subPackages, Package pakage, ClassLoader loader) {
+		return tryCheckAll(subPackages, pakage.getName(), loader);
+	}
+	
+	/**
+	 * like {@link #tryCheckAll(boolean, String, ClassLoader, boolean)} with
+	 * {@code tryCheckAll(subPackages, package, loader, true)}.
+	 * 
+	 * @param subPackages
+	 *            <code>true</code> if also classes in subPackages should be loaded
+	 * @param pakage
+	 *            the name of the package (like {@link Package#getName()})
+	 * @param loader
+	 *            the loader used to find/load classes
+	 * @see #tryCheckAll(boolean, String, ClassLoader, boolean)
+	 */
+	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage, ClassLoader loader) {
+		return tryCheckAll(subPackages, pakage, loader, false);
+	}
+	
+	/**
+	 * tries to check all classes from the given package.<br>
+	 * if {@code subPackages} is <code>true</code> this method also tries to check the classes in
+	 * supPackages.
+	 * <p>
+	 * a class is in a package, when the {@link Class#forName(String, boolean, ClassLoader)} method
+	 * finds the class, when the name starts with {@code pakage + "." + restName}.<br>
+	 * if {@code subPackages} is <code>false</code> {@code restName} is not allowed to contain a
+	 * {@code '.'}.
+	 * <p>
+	 * if {@code bailError} is <code>true</code>, errors on loading/finding the classes will be
+	 * re-thrown.<br>
+	 * if {@code bailError} is <code>false</code>, errors on loading/finding the classes will be
+	 * suppressed.
+	 * <p>
+	 * this method checks only classes wich are annotated with {@link CheckClass} and are not
+	 * ({@link CheckClass#disabled()}).
+	 * <p>
+	 * this method can not guarantee to find any classes in the given package or any sub-package!
+	 * 
+	 * @param subPackages
+	 *            <code>true</code> if also classes in subPackages should be loaded
+	 * @param pakage
+	 *            the name of the package (like {@link Package#getName()})
+	 * @param loader
+	 *            the loader used to find/load classes
+	 * @param bailError
+	 *            if errors on loading/finding classes should be re-thrown (<code>true</code>) or
+	 *            suppressed (<code>false</code>)
+	 * @return the result of all executed checks
+	 */
+	public static BigCheckResult tryCheckAll(boolean subPackages, String pakage, ClassLoader loader, boolean bailError) {
+		Set <Class <?>> classes = tryGetClassesForPackage(pakage, subPackages, loader, bailError);
+		return checkAll(true, classes.iterator());
+	}
+	
+	/**
+	 * Scans all class-loaders for the current thread for loaded jars, and then scans
+	 * each jar for the package name in question, listing all classes directly under
+	 * the package name in question. Assumes directory structure in jar file and class
+	 * package naming follow java conventions (i.e. com.example.test.MyTest would be in
+	 * /com/example/test/MyTest.class)
+	 * <p>
+	 * in addition this method also scans for directories, where also is assumed, that the classes are
+	 * placed followed by the java conventions. (i.e. <code>com.example.test.MyTest</code> would be in
+	 * <code>directory/com/example/test/MyTest.class</code>)
+	 * <p>
+	 * this method also reads the jars Class-Path for other jars and directories. for the jars and
+	 * directories referred in the jars are scanned with the same rules as defined here.<br>
+	 * it is ensured that no jar/directory is scanned exactly one time.
+	 * 
+	 * @see https://stackoverflow.com/questions/1156552/java-package-introspection
+	 * @see https://stackoverflow.com/a/1157352/18252455
+	 */
+	public static Set <Class <?>> tryGetClassesForPackage(String packageName, boolean allowSubPackages, ClassLoader loader, boolean bailError) {
+		String packagePath = packageName.replace(".", "/");
+		Set <URL> jarUrls = new HashSet <URL>();
+		Set <Path> directorys = new HashSet <Path>();
+		
+		findClassPools(loader, jarUrls, directorys);
+		Set <Class <?>> classes = new HashSet <Class <?>>();
+		findJarClasses(allowSubPackages, packagePath, jarUrls, directorys, classes, loader);
+		findDirClasses(allowSubPackages, packagePath, directorys, classes, loader);
+		return classes;
+	}
+	
+	private static void findDirClasses(boolean allowSubPackages, String packagePath, Set <Path> directorys, Set <Class <?>> classes, ClassLoader loader) {
+		Filter <Path> filter;
+		for (Path up : directorys) {
+			final Path path = up.toAbsolutePath();
+			if (allowSubPackages) {
+				filter = p -> {
+					p = p.toAbsolutePath();
+					if (p.startsWith(path)) return true;
+					else if (path.startsWith(path)) return true;
+					else return false;
+				};
+			} else {
+				filter = p -> {
+					if (p.toAbsolutePath().startsWith(path)) return true;
+					else return false;
+				};
+			}
+			findClassFilesRecursive(filter, path, path, classes, loader);
+		}
+	}
+	
+	private static void findClassFilesRecursive(Filter <Path> filter, Path path, Path start, Set <Class <?>> classes, ClassLoader loader) {
+		try (DirectoryStream <Path> dirStream = Files.newDirectoryStream(path, filter)) {
+			for (Path p : dirStream) {
+				if (Files.isDirectory(p)) {
+					findClassFilesRecursive(filter, p, start, classes, loader);
+				} else {
+					p = p.subpath(start.getNameCount(), p.getNameCount());
+					String str = p.toString();
+					if (str.endsWith(".class")) {
+						str = str.substring(0, str.length() - 6);
+						String sep = p.getFileSystem().getSeparator();
+						if (str.startsWith(sep)) {
+							str = str.substring(sep.length());
+						}
+						if (str.endsWith(sep)) {
+							str = str.substring(0, str.length() - sep.length());
+						}
+						String fullClassName = str.replace(sep, ".");
+						try {
+							Class <?> cls = Class.forName(fullClassName, false, loader);
+							classes.add(cls);
+						} catch (ClassNotFoundException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+			}
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+	}
+	
+	private static void findJarClasses(boolean allowSubPackages, String packagePath, Set <URL> nextJarUrls, Set <Path> directories, Set <Class <?>> classes, ClassLoader loader) {
+		Set <URL> allJarUrls = new HashSet <>();
+		while (true) {
+			Set <URL> thisJarUrls = new HashSet <>(nextJarUrls);
+			thisJarUrls.removeAll(allJarUrls);
+			if (thisJarUrls.isEmpty()) {
+				break;
+			}
+			allJarUrls.addAll(thisJarUrls);
+			// System.out.println("[findJarClasses]: " + thisJarUrls);
+			// System.out.println("[findJarClasses]: this.len=" + thisJarUrls.size());
+			// System.out.println("[findJarClasses]: all.len=" + allJarUrls.size());
+			for (URL url : thisJarUrls) {
+				// System.out.println("[findJarClassses]: url: " + url);
+				try (JarInputStream stream = new JarInputStream(url.openStream())) {
+					// may want better way to open url connections
+					readJarClassPath(stream, nextJarUrls, directories);
+					
+					JarEntry entry = stream.getNextJarEntry();
+					
+					while (entry != null) {
+						String name = entry.getName();
+						int i = name.lastIndexOf("/");
+						
+						if (i > 0 && name.endsWith(".class")) {
+							try {
+								if (allowSubPackages) {
+									if (name.substring(0, i).startsWith(packagePath)) {
+										classes.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+									}
+								} else {
+									if (name.substring(0, i).equals(packagePath)) {
+										classes.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+									}
+								}
+							} catch (ClassNotFoundException e) {
+								e.printStackTrace();
+							}
+						}
+						entry = stream.getNextJarEntry();
+					}
+					stream.close();
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+	}
+	
+	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories) {
+		Object classPathObj = stream.getManifest().getMainAttributes().get(new Name("Class-Path"));
+		if (classPathObj == null) {
+			classPathObj = stream.getManifest().getMainAttributes().get("Class-Path");
+		}
+		// class path is space separated. (paths with space become URL like '%20')
+		if (classPathObj instanceof String) {
+			String[] entries = ((String) classPathObj).split("\\s+");
+			for (String entry : entries) {
+				try {
+					URL url = new URL(entry);
+					addUrl(jarUrls, directories, url);
+				} catch (MalformedURLException e) {
+					e.printStackTrace();
+				}
+			}
+		}
+		// System.out.println("[findJarClassses]: jar-stream.main-attrs.Name(Class-Path): " + classPath);
+	}
+	
+	private static void findClassPools(ClassLoader classLoader, Set <URL> jarUrls, Set <Path> directoryPaths) {
+		while (classLoader != null) {
+			if (classLoader instanceof URLClassLoader) {
+				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
+					addUrl(jarUrls, directoryPaths, url);
+				}
+			} else {
+				// System.err.println("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
+			}
+			classLoader = classLoader.getParent();
+		}
+	}
+	
+	private static void addUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url) {
+		// System.out.println("[findClassPools]: url: " + url);
+		if (url.getFile().endsWith(".jar") || url.getFile().endsWith(".zip")) {
+			// may want better way to detect jar files
+			jarUrls.add(url);
+		} else {
+			try {
+				Path path = Paths.get(url.toURI());
+				if (Files.exists(path) && Files.isDirectory(path)) {
+					directoryPaths.add(path);
+				} else {
+					System.err.println("unknown url for class loading: " + url);
+				}
+			} catch (URISyntaxException e) {
+				e.printStackTrace();
+			}
+		}
 	}
 	
 }

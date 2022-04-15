@@ -1,17 +1,34 @@
 package de.hechler.patrick.check.cc;
 
+import static de.hechler.patrick.zeugs.check.Assert.assertEquals;
+import static de.hechler.patrick.zeugs.check.Assert.assertFalse;
+import static de.hechler.patrick.zeugs.check.Assert.assertNotEquals;
+import static de.hechler.patrick.zeugs.check.Assert.assertTrue;
+
+import java.lang.reflect.Method;
+
 import de.hechler.patrick.zeugs.check.CheckResult;
 import de.hechler.patrick.zeugs.check.Checker;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
+import de.hechler.patrick.zeugs.check.anotations.MethodParam;
+import de.hechler.patrick.zeugs.check.anotations.Start;
 
 @CheckClass
 public class CheckerCheckingChecker extends Checker {
 	
+	@Start
+	private void start(@MethodParam Method met) {
+		System.out.println(met.getName() + " start");
+	}
+	
+	@Start
+	private void end(@MethodParam Method met) {
+		System.out.println(met.getName() + " finish");
+	}
+	
 	@Check
 	public void resultChecker() {
-		System.out.println("resultChecker start");
-		
 		CheckResult r = new SubChecker1().result();
 		assertFalse(r.wentExpected());
 		assertTrue(r.checked("empty"));
@@ -39,8 +56,6 @@ public class CheckerCheckingChecker extends Checker {
 		r = new SubChecker4().result();
 		assertTrue(r.wentExpected());
 		assertEquals(0, r.cehckedCount());
-		
-		System.out.println("             finish rc");
 	}
 	
 	public class SubChecker1 extends Checker {
@@ -126,14 +141,33 @@ public class CheckerCheckingChecker extends Checker {
 	}
 	
 	@Check
-	public void compileErrors() {
-		System.out.println("compileErrors start");
-		new SubFormerWrongChecker().run();//former compile error
-		assertThrowsAny(() -> Checker.check(SubNotChecker.class));
-		System.out.println("              finish ce");
+	public void checkerCreateCheck() {
+		Checker c = new Checker(this.new InnerChecker());
+		CheckResult res = c.result();
+		assertTrue(res.wentExpected());
+		res = Checker.check(SubFormerWrongChecker.class);
+		assertTrue(res.wentExpected());
+		Checker.check(InnerChecker.class);
 	}
 	
-	public class SubFormerWrongChecker extends Checker {@Check private void name(Object param) {} }
-	public class SubNotChecker {@Check private void name() {} }
+	public static class SubFormerWrongChecker extends Checker {
+		
+		@Check
+		private void name(Object param) {
+		}
+		
+	}
+	
+	private class InnerChecker {
+		
+		@Start
+		private InnerChecker() {
+		}
+		
+		@Check
+		private void name() {
+		}
+		
+	}
 	
 }
