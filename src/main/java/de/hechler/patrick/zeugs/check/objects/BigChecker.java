@@ -676,11 +676,6 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packageName, jarUrls, directorys, loader, bailError);
 		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packageName, directorys, loader, bailError);
 		jarClasses.addAll(dirClasses);
-		jarClasses.forEach(cls -> {
-			if (cls.getAnnotation(CheckClass.class) != null) {
-				System.out.println("[tryGetClassesForPackage]: " + cls + " " + cls.getAnnotation(CheckClass.class));
-			}
-		});
 		return jarClasses;
 	}
 	
@@ -745,7 +740,6 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 						try {
 							Class <?> cls = Class.forName(fullClassName, false, loader);
 							classes.add(cls);
-							System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 						} catch (ClassNotFoundException e) {
 							if (bailError) {
 								throw new RuntimeException(e);
@@ -787,13 +781,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 									if (name.substring(0, i).startsWith(packagePath)) {
 										Class <?> cls = Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader);
 										result.add(cls);
-										System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 									}
 								} else {
 									if (name.substring(0, i).equals(packagePath)) {
 										Class <?> cls = Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader);
 										result.add(cls);
-										System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 									}
 								}
 							} catch (ClassNotFoundException e) {
