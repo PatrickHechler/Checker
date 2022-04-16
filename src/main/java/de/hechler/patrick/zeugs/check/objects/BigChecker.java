@@ -167,21 +167,26 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		List <TwoValues <Class <?>, Checker>> singleThreadClasses = new ArrayList <>();
 		Map <String, Class <?>> classes = new HashMap <>();
 		Map <Class <?>, CheckResult> results = new HashMap <>();
-		TwoValues <Class <?>, Checker> next = this.checkers.next();
-		while (this.checkers.hasNext()) {
+		TwoValues <Class <?>, Checker> old = null;
+		boolean retry = false;
+		while (retry || this.checkers.hasNext()) {
+			TwoValues <Class <?>, Checker> next = retry ? old : this.checkers.next();
+			retry = false;
 			CheckClass checkClass = next.getValueA().getAnnotation(CheckClass.class);
 			if (checkClass == null || checkClass.singleThread()) {
 				singleThreadClasses.add(next);
 				continue;
 			}
 			if (this.maxCheckers == -1 || this.currentCheckers < this.maxCheckers) {
-				final TwoValues <Class <?>, Checker> finalNext = next;
 				new Thread(() -> {
 					this.currentCheckers ++ ;
 					try {
-						accept(finalNext, classes, results);
+						accept(next, classes, results);
 					} finally {
-						this.currentCheckers -- ;
+						synchronized (this) {
+							this.currentCheckers -- ;
+							notifyAll();
+						}
 					}
 				}).start();
 			} else if (this.maxCheckers == 0) {
@@ -190,14 +195,14 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 				while (this.maxCheckers <= this.currentCheckers && this.maxCheckers != -1) {
 					try {
 						synchronized (this) {
-							wait(100);
+							wait(10000L);
 						}
 					} catch (InterruptedException e) {
 						e.printStackTrace();
 					}
 				}
+				retry = true;
 			}
-			next = this.checkers.next();
 		}
 		while (this.currentCheckers > 0) {
 			try {
@@ -205,12 +210,13 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 					if (this.currentCheckers == 0) {
 						break;
 					}
-					wait(100);
+					wait(10000L);
 				}
 			} catch (InterruptedException e) {
 				e.printStackTrace();
 			}
 		}
+		assert this.currentCheckers == 0;
 		singleThreadClasses.forEach(tv -> this.accept(tv, classes, results));
 		long end = System.currentTimeMillis();
 		this.result = new BigCheckResult(classes, results, start, end);
@@ -233,7 +239,6 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		CheckResult res = checker.get();
 		synchronized (this) {
 			BigCheckResult.put(classes, results, cls, res);
-			notifyAll();
 		}
 	}
 	
@@ -671,6 +676,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		Set <Class <?>> jarClasses = findJarClasses(allowSubPackages, packageName, jarUrls, directorys, loader, bailError);
 		Set <Class <?>> dirClasses = findDirClasses(allowSubPackages, packageName, directorys, loader, bailError);
 		jarClasses.addAll(dirClasses);
+		jarClasses.forEach(cls -> {
+			if (cls.getAnnotation(CheckClass.class) != null) {
+				System.out.println("[tryGetClassesForPackage]: " + cls + " " + cls.getAnnotation(CheckClass.class));
+			}
+		});
 		return jarClasses;
 	}
 	
@@ -735,6 +745,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 						try {
 							Class <?> cls = Class.forName(fullClassName, false, loader);
 							classes.add(cls);
+							System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 						} catch (ClassNotFoundException e) {
 							if (bailError) {
 								throw new RuntimeException(e);
@@ -774,11 +785,15 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 							try {
 								if (subPackages) {
 									if (name.substring(0, i).startsWith(packagePath)) {
-										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+										Class <?> cls = Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader);
+										result.add(cls);
+										System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 									}
 								} else {
 									if (name.substring(0, i).equals(packagePath)) {
-										result.add(Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader));
+										Class <?> cls = Class.forName(name.substring(0, name.length() - 6).replace("/", "."), false, loader);
+										result.add(cls);
+										System.out.println("[findDirClassFilesRecursive]: found class: " + cls + " annot: " + cls.getAnnotation(CheckClass.class));
 									}
 								}
 							} catch (ClassNotFoundException e) {

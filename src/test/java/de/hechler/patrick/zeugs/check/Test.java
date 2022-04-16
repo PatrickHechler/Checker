@@ -18,7 +18,6 @@ public class Test {
 		System.out.println("[Test]: finished all checks");
 		res.print();
 		if (res.wentUnexpected()) {
-			res.detailedPrintUnexpected(System.out);
 			throw new Error("result is not expected!");
 		}
 	}

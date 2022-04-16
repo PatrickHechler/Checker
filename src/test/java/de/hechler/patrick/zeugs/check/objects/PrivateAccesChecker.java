@@ -6,7 +6,7 @@ import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 
 
 @CheckClass
-public class PrivateAccesChecker {
+class PrivateAccesChecker {
 	
 	@Check
 	private void checkPrivateAcces() {

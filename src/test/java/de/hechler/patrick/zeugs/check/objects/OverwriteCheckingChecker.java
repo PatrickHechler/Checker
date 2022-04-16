@@ -7,57 +7,59 @@ import static de.hechler.patrick.zeugs.check.Assert.fail;
 import java.lang.reflect.Method;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
+import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 
-public class OverwriteCheckingChecker extends Checker {
+@CheckClass public class OverwriteCheckingChecker extends Checker {
 	
 	@Check
 	private void doCheck() throws NoSuchMethodException, SecurityException {
 		CheckResult cr = Checker.check(SubChecker.class);
 		assertFalse(cr.wentExpected());
-		Method met = SubChecker.class.getMethod("overwrittenFormerPrivateBadCheck");
+		assertTrue(cr.wentUnexpected("overwrittenFormerPrivateBadCheck"));
+		Method met = SubChecker.class.getDeclaredMethod("overwrittenFormerPrivateBadCheck");
 		assertTrue(cr.wentExpected(met));
-		met = SubChecker.class.getMethod("overwrittenFormerPublicBadCheck");
+		met = SubChecker.class.getDeclaredMethod("overwrittenFormerPublicBadCheck");
 		assertTrue(cr.wentExpected(met));
-		met = SuperChecker.class.getMethod("overwrittenFormerPrivateBadCheck");
+		met = SuperChecker.class.getDeclaredMethod("overwrittenFormerPrivateBadCheck");
 		assertFalse(cr.wentExpected(met));
-		met = SuperChecker.class.getMethod("overwrittenFormerPublicBadCheck");
+		met = SuperChecker.class.getDeclaredMethod("overwrittenFormerPublicBadCheck");
 		assertTrue(cr.wentExpected(met));
 		assertTrue(cr.wentExpected("goodCheck"));
 		assertTrue(cr.wentExpected(met));
 		assertTrue(cr.wentExpected("overwrittenFormerPublicBadCheck"));
 	}
 	
-}
-
-
-class SubChecker extends SuperChecker {
 	
-	@Check
-	private void overwrittenFormerPrivateBadCheck() {
+	static class SubChecker extends SuperChecker {
+		
+		@Check
+		private void overwrittenFormerPrivateBadCheck() {
+		}
+		
+		@Check
+		@Override
+		public void overwrittenFormerPublicBadCheck() {
+		}
+		
 	}
 	
-	@Check
-	@Override
-	public void overwrittenFormerPublicBadCheck() {
-	}
 	
-}
-
-
-class SuperChecker extends Checker {
-	
-	@Check
-	private void goodCheck() {
-	}
-	
-	@Check
-	private void overwrittenFormerPrivateBadCheck() {
-		fail();
-	}
-	
-	@Check
-	public void overwrittenFormerPublicBadCheck() {
-		fail();
+	static class SuperChecker extends Checker {
+		
+		@Check
+		private void goodCheck() {
+		}
+		
+		@Check
+		private void overwrittenFormerPrivateBadCheck() {
+			fail();
+		}
+		
+		@Check
+		public void overwrittenFormerPublicBadCheck() {
+			fail();
+		}
+		
 	}
 	
 }
