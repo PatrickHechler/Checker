@@ -12,13 +12,18 @@ public class Test {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException {
-		System.out.println("[Test]: start all checks");
-		BigCheckResult res = BigChecker.tryGenerateBigChecker(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true).get();
-		assertGreather(res.checkedResultCount(), 0);
-		System.out.println("[Test]: finished all checks");
-		res.print();
-		if (res.wentUnexpected()) {
-			throw new Error("result is not expected!");
+		try {
+			System.out.println("[Test]: start all checks");
+			BigCheckResult res = BigChecker.tryGenerateBigChecker(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true).get();
+			assertGreather(res.checkedResultCount(), 0);
+			System.out.println("[Test]: finished all checks");
+			res.print();
+			if (res.wentUnexpected()) {
+				throw new Error("result is not expected!");
+			}
+		} catch (Throwable t) {
+			System.out.println("[main]: end");
+			t.printStackTrace();
 		}
 	}
 	

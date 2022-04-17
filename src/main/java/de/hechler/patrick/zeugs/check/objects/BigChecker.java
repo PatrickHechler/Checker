@@ -2,9 +2,8 @@ package de.hechler.patrick.zeugs.check.objects;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -816,7 +815,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		if (classPathObj instanceof String) {
 			String[] entries = ((String) classPathObj).split("\\s+");// should also work with a single space (" ")
 			for (String entry : entries) {
-				try {
+				try {//TODO do not forget pom.xml! + more checks for 18 (like maven) + check openjdk11
 					URL url = new URL(entry);
 					addFromUrl(jarUrls, directories, url, bailError);
 				} catch (MalformedURLException e) {
@@ -835,41 +834,76 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 					addFromUrl(jarUrls, directoryPaths, url, bailError);
 				}
 			} else {
-				boolean added = addFromUnknownClass(classLoader, jarUrls, directoryPaths, bailError);
-				if ( !added && bailError) {
-					throw new RuntimeException("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
+				URL res = classLoader.getResource("");
+				if (res != null) {
+					addFromUrl(jarUrls, directoryPaths, res, bailError);
 				}
+				res = classLoader.getResource("/");
+				if (res != null) {
+					addFromUrl(jarUrls, directoryPaths, res, bailError);
+				}
+				addFromUnknownClass(classLoader, jarUrls, directoryPaths, bailError, 8);
 			}
 			classLoader = classLoader.getParent();
 		}
-		
 	}
-
-	private static boolean addFromUnknownClass(Object instance, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError) {
-		boolean added = false;
+	
+	private static void addFromUnknownClass(Object instance, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError, int maxDeep) {
 		Class <?> cls = instance.getClass();
 		while (cls != null) {
 			Field[] fields = cls.getDeclaredFields();
 			for (Field field : fields) {
 				Class <?> type = field.getType();
+				Object value;
 				try {
-					added |= addFromUnknownValue(field.get(instance), jarUrls, directoryPaths, bailError, type);
-				} catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
-					if (bailError) {
-						throw new RuntimeException(e);
+					boolean flag = field.isAccessible();
+					boolean newflag = flag;
+					try {
+						field.setAccessible(true);
+						newflag = true;
+					} catch (Exception e) {}
+					try {
+						value = field.get(instance);
+					} finally {
+						if (flag != newflag) {
+							field.setAccessible(flag);
+						}
 					}
+				} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
+					try {
+						Field override = AccessibleObject.class.getDeclaredField("override");
+						boolean flag = override.isAccessible();
+						boolean newFlag = flag;
+						try {
+							override.setAccessible(true);
+							flag = true;
+						} catch (Exception s) {}
+						override.setBoolean(field, true);
+						if (flag != newFlag) {
+							override.setAccessible(flag);
+						}
+						value = field.get(instance);
+					} catch (Throwable t) {
+						if (bailError) {
+							if (Runtime.version().feature() < 11) {
+								e.addSuppressed(t);
+								throw new RuntimeException(e);
+							}
+						}
+						value = null;
+					}
+				}
+				if (value != null) {
+					addFromUnknownValue(value, jarUrls, directoryPaths, bailError, type, field.getName(), maxDeep - 1);
 				}
 			}
 			cls = cls.getSuperclass();
 		}
-		return added;
 	}
 	
-	private static boolean addFromUnknownValue(Object value, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError, Class <?> type)
-			throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
-		boolean added = false;
+	private static void addFromUnknownValue(Object value, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError, Class <?> type, String fieldName, int maxDeep) {
 		if (Collection.class.isAssignableFrom(type)) {
-			for (Object obj : (Object[]) value) {
+			for (Object obj : (Collection <?>) value) {
 				URL url = null;
 				try {
 					if (obj instanceof URL) {
@@ -886,19 +920,16 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 				}
 				if (url != null) {
 					addFromUrl(jarUrls, directoryPaths, url, bailError);
-					added = true;
 				}
 			}
 		} else if (URL[].class.isAssignableFrom(type)) {
 			for (URL url : (URL[]) value) {
 				addFromUrl(jarUrls, directoryPaths, url, bailError);
-				added = true;
 			}
 		} else if (Path[].class.isAssignableFrom(type)) {
 			for (Path path : (Path[]) value) {
 				try {
 					addFromUrl(jarUrls, directoryPaths, path.toUri().toURL(), bailError);
-					added = true;
 				} catch (MalformedURLException e) {
 					if (bailError) {
 						throw new RuntimeException(e);
@@ -909,20 +940,15 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 			for (File file : (File[]) value) {
 				try {
 					addFromUrl(jarUrls, directoryPaths, file.toURI().toURL(), bailError);
-					added = true;
 				} catch (MalformedURLException e) {
 					if (bailError) {
 						throw new RuntimeException(e);
 					}
 				}
 			}
-		} else if (type.getName().toLowerCase().contains("url")) {// jdk.internal.loader.URLClassPath
-			added = addFromUnknownClass(value, jarUrls, directoryPaths, bailError);
-//			Method getURLs = type.getMethod("getURLs");
-//			Object urls = getURLs.invoke(value);
-//			addFromUnknownValue(urls, jarUrls, directoryPaths, bailError, getURLs.getReturnType());
+		} else if (maxDeep > 0) {
+			addFromUnknownClass(value, jarUrls, directoryPaths, bailError, maxDeep - 1);
 		}
-		return added;
 	}
 	
 	private static void addFromUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
@@ -932,7 +958,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		} else {
 			try {
 				Path path = Paths.get(url.toURI());
-				if (Files.exists(path) && Files.isDirectory(path)) {
+				if (Files.isDirectory(path)) {
 					directoryPaths.add(path);
 				} else if (bailError) {
 					throw new RuntimeException("unknown url for class loading: " + url);
