@@ -1,6 +1,10 @@
 package de.hechler.patrick.zeugs.check.objects;
 
+import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
 import java.net.URL;
@@ -11,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -829,11 +834,95 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
 					addFromUrl(jarUrls, directoryPaths, url, bailError);
 				}
-			} else if (bailError) {
-				throw new RuntimeException("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
+			} else {
+				boolean added = addFromUnknownClass(classLoader, jarUrls, directoryPaths, bailError);
+				if ( !added && bailError) {
+					throw new RuntimeException("unknown class loader: " + classLoader.getClass() + " : " + classLoader);
+				}
 			}
 			classLoader = classLoader.getParent();
 		}
+		
+	}
+
+	private static boolean addFromUnknownClass(Object instance, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError) {
+		boolean added = false;
+		Class <?> cls = instance.getClass();
+		while (cls != null) {
+			Field[] fields = cls.getDeclaredFields();
+			for (Field field : fields) {
+				Class <?> type = field.getType();
+				try {
+					added |= addFromUnknownValue(field.get(instance), jarUrls, directoryPaths, bailError, type);
+				} catch (IllegalArgumentException | IllegalAccessException | NoSuchMethodException | SecurityException | InvocationTargetException e) {
+					if (bailError) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+			cls = cls.getSuperclass();
+		}
+		return added;
+	}
+	
+	private static boolean addFromUnknownValue(Object value, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError, Class <?> type)
+			throws IllegalAccessException, NoSuchMethodException, InvocationTargetException {
+		boolean added = false;
+		if (Collection.class.isAssignableFrom(type)) {
+			for (Object obj : (Object[]) value) {
+				URL url = null;
+				try {
+					if (obj instanceof URL) {
+						url = (URL) obj;
+					} else if (obj instanceof Path) {
+						url = ((Path) obj).toUri().toURL();
+					} else if (obj instanceof File) {
+						url = ((File) obj).toURI().toURL();
+					}
+				} catch (MalformedURLException e) {
+					if (bailError) {
+						throw new RuntimeException(e);
+					}
+				}
+				if (url != null) {
+					addFromUrl(jarUrls, directoryPaths, url, bailError);
+					added = true;
+				}
+			}
+		} else if (URL[].class.isAssignableFrom(type)) {
+			for (URL url : (URL[]) value) {
+				addFromUrl(jarUrls, directoryPaths, url, bailError);
+				added = true;
+			}
+		} else if (Path[].class.isAssignableFrom(type)) {
+			for (Path path : (Path[]) value) {
+				try {
+					addFromUrl(jarUrls, directoryPaths, path.toUri().toURL(), bailError);
+					added = true;
+				} catch (MalformedURLException e) {
+					if (bailError) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		} else if (File[].class.isAssignableFrom(type)) {
+			for (File file : (File[]) value) {
+				try {
+					addFromUrl(jarUrls, directoryPaths, file.toURI().toURL(), bailError);
+					added = true;
+				} catch (MalformedURLException e) {
+					if (bailError) {
+						throw new RuntimeException(e);
+					}
+				}
+			}
+		} else if (type.getName().toLowerCase().contains("url")) {// jdk.internal.loader.URLClassPath
+			added = addFromUnknownClass(value, jarUrls, directoryPaths, bailError);
+//			Method getURLs = type.getMethod("getURLs");
+//			Object urls = getURLs.invoke(value);
+//			addFromUnknownValue(urls, jarUrls, directoryPaths, bailError, getURLs.getReturnType());
+		}
+		return added;
 	}
 	
 	private static void addFromUrl(Set <URL> jarUrls, Set <Path> directoryPaths, URL url, boolean bailError) {
