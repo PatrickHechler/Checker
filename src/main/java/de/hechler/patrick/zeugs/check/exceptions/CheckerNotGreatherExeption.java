@@ -46,4 +46,10 @@ public class CheckerNotGreatherExeption extends CheckerException {
 		this.b = Double.valueOf(b);
 	}
 	
+	public CheckerNotGreatherExeption(Object a, Object b) {
+		super(a + " is not greather then " + b);
+		this.a = a;
+		this.b = b;
+	}
+	
 }

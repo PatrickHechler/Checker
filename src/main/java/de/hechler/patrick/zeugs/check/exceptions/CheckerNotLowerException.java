@@ -45,5 +45,11 @@ public class CheckerNotLowerException extends CheckerException {
 		this.a = Double.valueOf(a);
 		this.b = Double.valueOf(b);
 	}
+
+	public CheckerNotLowerException(Object a, Object b) {
+		super(a + " is not lower than " + b);
+		this.a = a;
+		this.b = b;
+	}
 	
 }

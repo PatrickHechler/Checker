@@ -56,6 +56,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the arrays are equals
+	 * @see Arrays#equals(Object[], Object[])
 	 */
 	public static void assertNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -77,6 +78,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the arrays are deep equals
+	 * @see Arrays#deepEquals(Object[], Object[])
 	 */
 	public static void assertDeepNotArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if (Arrays.deepEquals(a, b)) {
@@ -529,6 +531,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(boolean[], boolean[])
 	 */
 	public static void assertNotArrayEquals(boolean[] a, boolean[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -548,6 +551,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(char[], char[])
 	 */
 	public static void assertNotArrayEquals(char[] a, char[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -567,6 +571,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(long[], long[])
 	 */
 	public static void assertNotArrayEquals(long[] a, long[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -586,6 +591,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(int[], int[])
 	 */
 	public static void assertNotArrayEquals(int[] a, int[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -605,6 +611,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(short[], short[])
 	 */
 	public static void assertNotArrayEquals(short[] a, short[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -624,6 +631,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(byte[], byte[])
 	 */
 	public static void assertNotArrayEquals(byte[] a, byte[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -643,6 +651,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(float[], float[])
 	 */
 	public static void assertNotArrayEquals(float[] a, float[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -662,6 +671,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are equal.
+	 * @see Arrays#equals(double[], double[])
 	 */
 	public static void assertNotArrayEquals(double[] a, double[] b) throws CheckerException {
 		if (Arrays.equals(a, b)) {
@@ -683,6 +693,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the arrays are not equals
+	 * @see Arrays#equals(Object[], Object[])
 	 */
 	public static void assertArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -704,6 +715,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the arrays are not deep equals
+	 * @see Arrays#deepEquals(Object[], Object[])
 	 */
 	public static void assertDeepArrayEquals(Object[] a, Object[] b) throws CheckerException {
 		if ( !Arrays.deepEquals(a, b)) {
@@ -1189,6 +1201,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(boolean[], boolean[])
 	 */
 	public static void assertArrayEquals(boolean[] a, boolean[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1208,6 +1221,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(char[], char[])
 	 */
 	public static void assertArrayEquals(char[] a, char[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1227,6 +1241,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(long[], long[])
 	 */
 	public static void assertArrayEquals(long[] a, long[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1246,6 +1261,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(int[], int[])
 	 */
 	public static void assertArrayEquals(int[] a, int[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1265,6 +1281,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(short[], short[])
 	 */
 	public static void assertArrayEquals(short[] a, short[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1284,6 +1301,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(byte[], byte[])
 	 */
 	public static void assertArrayEquals(byte[] a, byte[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1303,6 +1321,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(float[], float[])
 	 */
 	public static void assertArrayEquals(float[] a, float[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1322,6 +1341,7 @@ public class Assert {
 	 *            the second array
 	 * @throws CheckerException
 	 *             if the two arrays are not equal.
+	 * @see Arrays#equals(double[], double[])
 	 */
 	public static void assertArrayEquals(double[] a, double[] b) throws CheckerException {
 		if ( !Arrays.equals(a, b)) {
@@ -1359,6 +1379,7 @@ public class Assert {
 	 *            the second object
 	 * @throws CheckerException
 	 *             if the two objects are not equal.
+	 * @see Objects#equals(Object, Object)
 	 */
 	public static void assertEquals(Object a, Object b) throws CheckerException {
 		if ( !Objects.equals(a, b)) {
@@ -1379,6 +1400,7 @@ public class Assert {
 	 *            the second object
 	 * @throws CheckerException
 	 *             if the two objects are not equal.
+	 * @see Objects#deepEquals(Object, Object)
 	 */
 	public static void assertDeepEquals(Object a, Object b) throws CheckerException {
 		if ( !Objects.deepEquals(a, b)) {
@@ -1827,7 +1849,27 @@ public class Assert {
 		}
 	}
 	
-	
+	/**
+	 * asserts that the first value is equal to the second value.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if the values are not equal.
+	 */
+	public static <B> void assertEqual(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) != 0) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+
 	/**
 	 * asserts that the two objects are references to the different instances and that not both are
 	 * <code>null</code>.<br>
@@ -1857,6 +1899,7 @@ public class Assert {
 	 *            the second object
 	 * @throws CheckerException
 	 *             if the two objects are equal.
+	 * @see Objects#equals(Object, Object)
 	 */
 	public static void assertNotEquals(Object a, Object b) throws CheckerException {
 		if (Objects.equals(a, b)) {
@@ -1877,6 +1920,7 @@ public class Assert {
 	 *            the second object
 	 * @throws CheckerException
 	 *             if the two objects are equal.
+	 * @see Objects#deepEquals(Object, Object)
 	 */
 	public static void assertDeepNotEquals(Object a, Object b) throws CheckerException {
 		if (Objects.deepEquals(a, b)) {
@@ -2325,6 +2369,27 @@ public class Assert {
 		}
 	}
 	
+	/**
+	 * asserts that the first value is not equal to the second value.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if both values are equal.
+	 */
+	public static <B> void assertNotEqual(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) == 0) {
+			throw new CheckerNotEqualsExeption(a, b);
+		}
+	}
+	
 	
 	/**
 	 * asserts that the first value is lower than the second value or that both values are equal.<br>
@@ -2436,6 +2501,27 @@ public class Assert {
 	 */
 	public static void assertLowerEqual(double a, double b) throws CheckerException {
 		if (a > b) {
+			throw new CheckerNotLowerEqualException(a, b);
+		}
+	}
+	
+	/**
+	 * asserts that the first value is lower than the second value or that both are equal.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if the first value is greater than the second value.
+	 */
+	public static <B> void assertLowerEqual(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) > 0) {
 			throw new CheckerNotLowerEqualException(a, b);
 		}
 	}
@@ -2555,6 +2641,27 @@ public class Assert {
 		}
 	}
 	
+	/**
+	 * asserts that the first value is lower than the second value.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if the first value is greater than the second value or if both values are equal.
+	 */
+	public static <B> void assertLower(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) >= 0) {
+			throw new CheckerNotLowerException(a, b);
+		}
+	}
+	
 	
 	/**
 	 * asserts that the first value is greater than the second value or that both are equal.<br>
@@ -2670,6 +2777,27 @@ public class Assert {
 		}
 	}
 	
+	/**
+	 * asserts that the first value is greater than the second value or equal to the second value.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if the first value is lower than the second value.
+	 */
+	public static <B> void assertGreatherEqual(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) < 0) {
+			throw new CheckerNotGreatherEqualExeption(a, b);
+		}
+	}
+	
 	
 	/**
 	 * asserts that the first value is greater than the second value.<br>
@@ -2781,6 +2909,27 @@ public class Assert {
 	 */
 	public static void assertGreather(double a, double b) throws CheckerException {
 		if (a <= b) {
+			throw new CheckerNotGreatherExeption(a, b);
+		}
+	}
+	
+	/**
+	 * asserts that the first value is greater than the second value.<br>
+	 * two values are equal if {@link Comparable#compareTo(Object)} returns {@code 0}.<br>
+	 * two first value is greater if {@link Comparable#compareTo(Object)} returns a value greater
+	 * {@code 0}.<br>
+	 * two first value is smaller if {@link Comparable#compareTo(Object)} returns a value smaller
+	 * {@code 0}.<br>
+	 * 
+	 * @param a
+	 *            the first value
+	 * @param b
+	 *            the second value
+	 * @throws CheckerException
+	 *             if the first value is lower than the second value or if both values are equal.
+	 */
+	public static <B> void assertGreather(Comparable <? super B> a, B b) throws CheckerException {
+		if (a.compareTo(b) <= 0) {
 			throw new CheckerNotGreatherExeption(a, b);
 		}
 	}
