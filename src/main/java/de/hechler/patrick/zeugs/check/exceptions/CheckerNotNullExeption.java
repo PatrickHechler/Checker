@@ -10,6 +10,12 @@ public class CheckerNotNullExeption extends CheckerException {
 	
 	
 	
+	public CheckerNotNullExeption(Object obj, String msg) {
+		super(msg);
+		notNull = obj;
+		primType = false;
+	}
+	
 	public CheckerNotNullExeption(Object obj) {
 		super("'" + obj + "' is not null!");
 		notNull = obj;

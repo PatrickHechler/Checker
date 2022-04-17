@@ -17,6 +17,7 @@ public class CheckerNullExeption extends CheckerException {
 	
 	public CheckerNullExeption(Class <?> type) {
 		this("it was a non null value of type: " + type.getCanonicalName() == null ? type.getName() : type.getCanonicalName(), type);
+		this.type = type;
 	}
 	
 	public CheckerNullExeption(String msg, Class <?> type) {
