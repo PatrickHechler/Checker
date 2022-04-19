@@ -194,7 +194,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 							notifyAll();
 						}
 					}
-				}, "Checker for class: " + next.getValueA().getName()).start();
+				}, "Checker : " + next.getValueA().getName()).start();
 			} else if (this.maxCheckers == 0) {
 				accept(next, classes, results);
 			} else {
