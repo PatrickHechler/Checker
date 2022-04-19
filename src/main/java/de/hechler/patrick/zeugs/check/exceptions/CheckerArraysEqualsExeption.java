@@ -10,7 +10,7 @@ public class CheckerArraysEqualsExeption extends CheckerException {
 	public final Object       b;
 	
 	public CheckerArraysEqualsExeption(Object a, Object b) {
-		super("arrays not equals: " + tos(a) + " not equals " + tos(b));
+		super("arrays equals: " + tos(a) + " equals " + tos(b));
 		this.a = a;
 		this.b = b;
 	}
