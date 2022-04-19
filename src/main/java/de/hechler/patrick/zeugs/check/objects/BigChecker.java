@@ -792,7 +792,9 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
                         addFromUrl(jarUrls, directoryPaths, res, bailError);
                     }
                 }
-                addFromUnknownClass(classLoader, jarUrls, directoryPaths, bailError, 8);
+                if (jarUrls.isEmpty() && directoryPaths.isEmpty()) {
+                	addFromUnknownClass(classLoader, jarUrls, directoryPaths, bailError, 8);
+                }
             }
             classLoader = classLoader.getParent();
         }
