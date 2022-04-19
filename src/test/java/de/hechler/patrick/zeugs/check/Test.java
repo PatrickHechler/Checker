@@ -12,6 +12,7 @@ public class Test {
 	}
 	
 	public static void main(String[] args) throws ClassNotFoundException {
+		System.out.println("start");
 		try {
 			System.out.println("[Test]: start all checks");
 			BigCheckResult res = BigChecker.tryGenerateBigChecker(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true).get();
