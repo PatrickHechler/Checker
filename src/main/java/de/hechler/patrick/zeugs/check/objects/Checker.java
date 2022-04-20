@@ -258,7 +258,11 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 				throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 			}
 			met.setAccessible(flag);
+			Object result = r.getResult();
 			if (type.isPrimitive()) {
+				if (result == null) {
+					throw new NullPointerException("null pointer result for a primitive type");
+				}
 				if (type == Integer.TYPE) {
 					type = Integer.class;
 				} else if (type == Long.TYPE) {
@@ -279,7 +283,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 					throw new InternalError("unknown primitiv param: '" + type + '\'');
 				}
 			}
-			return type.cast(r.getResult());
+			return type.cast(result);
 		} else if (rp != null && !rp.disabled()) {
 			return type.cast(checked);
 		} else if (mp != null && !mp.disabled()) {
