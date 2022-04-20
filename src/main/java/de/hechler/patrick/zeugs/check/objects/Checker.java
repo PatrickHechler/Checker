@@ -258,6 +258,27 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 				throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 			}
 			met.setAccessible(flag);
+			if (type.isPrimitive()) {
+				if (type == Integer.TYPE) {
+					type = Integer.class;
+				} else if (type == Long.TYPE) {
+					type = Long.class;
+				} else if (type == Byte.TYPE) {
+					type = Byte.class;
+				} else if (type == Short.TYPE) {
+					type = Short.class;
+				} else if (type == Boolean.TYPE) {
+					type = Boolean.class;
+				} else if (type == Character.TYPE) {
+					type = Character.class;
+				} else if (type == Double.TYPE) {
+					type = Double.class;
+				} else if (type == Float.TYPE) {
+					type = Float.class;
+				} else {
+					throw new InternalError("unknown primitiv param: '" + type + '\'');
+				}
+			}
 			return type.cast(r.getResult());
 		} else if (rp != null && !rp.disabled()) {
 			return type.cast(checked);
