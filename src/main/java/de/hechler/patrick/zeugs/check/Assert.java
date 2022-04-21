@@ -1,5 +1,20 @@
 package de.hechler.patrick.zeugs.check;
 
+import java.lang.Boolean;
+import java.lang.Byte;
+import java.lang.Character;
+import java.lang.Class;
+import java.lang.Comparable;
+import java.lang.Double;
+import java.lang.Float;
+import java.lang.Integer;
+import java.lang.InternalError;
+import java.lang.Long;
+import java.lang.Object;
+import java.lang.Short;
+import java.lang.String;
+import java.lang.SuppressWarnings;
+import java.lang.Throwable;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.function.Supplier;

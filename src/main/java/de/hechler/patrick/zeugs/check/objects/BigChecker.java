@@ -2,7 +2,6 @@ package de.hechler.patrick.zeugs.check.objects;
 
 import java.io.File;
 import java.io.IOException;
-import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Field;
 import java.net.MalformedURLException;
 import java.net.URISyntaxException;
@@ -842,7 +841,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 				Class <?> type = field.getType();
 				Object value;
 				try {
-					value = getValue(instance, field);
+					value = Checker.getValue(field, instance);
 					if (value != null) {
 						addFromUnknownValue(value, jarUrls, directoryPaths, bailError, type, field.getName(), maxDeep - 1);
 					}
@@ -872,42 +871,6 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 			cls = cls.getSuperclass();
 		}
 		
-	}
-	
-	private static Object getValue(Object instance, Field field) throws IllegalArgumentException, IllegalAccessException, SecurityException {
-		try {
-			boolean flag = field.isAccessible();
-			boolean newflag = flag;
-			try {
-				field.setAccessible(true);
-				newflag = true;
-			} catch (Exception e) {}
-			try {
-				return field.get(instance);
-			} finally {
-				if (flag != newflag) {
-					field.setAccessible(flag);
-				}
-			}
-		} catch (IllegalArgumentException | IllegalAccessException | SecurityException e) {
-			try {
-				Field override = AccessibleObject.class.getDeclaredField("override");
-				boolean flag = override.isAccessible();
-				boolean newFlag = flag;
-				try {
-					override.setAccessible(true);
-					flag = true;
-				} catch (Exception s) {}
-				override.setBoolean(field, true);
-				if (flag != newFlag) {
-					override.setAccessible(flag);
-				}
-				return field.get(instance);
-			} catch (IllegalArgumentException | IllegalAccessException | NoSuchFieldException | SecurityException e1) {
-				e.addSuppressed(e1);
-				throw e;
-			}
-		}
 	}
 	
 	private static void addFromUnknownValue(Object value, Set <URL> jarUrls, Set <Path> directoryPaths, boolean bailError, Class <?> type, String fieldName, int maxDeep) {

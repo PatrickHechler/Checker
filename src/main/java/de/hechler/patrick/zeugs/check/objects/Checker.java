@@ -1,7 +1,9 @@
 package de.hechler.patrick.zeugs.check.objects;
 
+import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -216,12 +218,10 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 				Parameter param = params[i];
 				ps[i] = getParam(invoker, checked, notRun, param, met.getDeclaringClass());
 			}
-			boolean flag = met.isAccessible();
-			met.setAccessible(true);
+			setAccessible(met);
 			start = System.currentTimeMillis();
 			Object res = met.invoke(invoker, ps);
 			long end = System.currentTimeMillis();
-			met.setAccessible(flag);
 			result = new Result(notRun, res, start, end);
 			// } catch (IllegalAccessException | IllegalArgumentException e) {
 			// throw new AssertionError("can't run method: '" + m.getName() + "' params: " +
@@ -265,24 +265,22 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			} catch (NoSuchMethodException | SecurityException e) {
 				throw new AssertionError("could not get Method (" + method + " params: " + Arrays.deepToString(paramClassNames) + "): " + e.getMessage(), e);
 			}
-			boolean flag = met.isAccessible();
-			met.setAccessible(true);
+			setAccessible(met);
 			Result r = run(met, invoker, null, notRun);
 			if (r.badResult()) {
 				throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 			}
-			met.setAccessible(flag);
 			Object result = r.getResult();
 			if (type.isPrimitive()) {
 				if (result == null) throw new NullPointerException("null pointer result for a primitive type");
-				else if (type == Integer.TYPE) type = Integer.class;
-				else if (type == Long.TYPE) type = Long.class;
-				else if (type == Byte.TYPE) type = Byte.class;
-				else if (type == Short.TYPE) type = Short.class;
-				else if (type == Boolean.TYPE) type = Boolean.class;
-				else if (type == Character.TYPE) type = Character.class;
-				else if (type == Double.TYPE) type = Double.class;
-				else if (type == Float.TYPE) type = Float.class;
+				else if (type == int.class) type = Integer.class;
+				else if (type == long.class) type = Long.class;
+				else if (type == byte.class) type = Byte.class;
+				else if (type == short.class) type = Short.class;
+				else if (type == boolean.class) type = Boolean.class;
+				else if (type == char.class) type = Character.class;
+				else if (type == double.class) type = Double.class;
+				else if (type == float.class) type = Float.class;
 				else throw new InternalError("unknown primitiv param: '" + type + '\'');
 			}
 			return type.cast(result);
@@ -292,13 +290,13 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			return type.cast(notRun);
 		} else if (type.isPrimitive()) {
 			if (type == Boolean.TYPE) return Boolean.FALSE;
-			else if (type == Integer.TYPE) return 0;
-			else if (type == Double.TYPE) return 0.0d;
-			else if (type == Character.TYPE) return '\0';
-			else if (type == Byte.TYPE) return (Byte) (byte) 0;
-			else if (type == Long.TYPE) return 0l;
-			else if (type == Float.TYPE) return 0.0f;
-			else if (type == Short.TYPE) return (Short) (short) 0;
+			else if (type == int.class) return 0;
+			else if (type == double.class) return 0.0d;
+			else if (type == char.class) return '\0';
+			else if (type == byte.class) return (Byte) (byte) 0;
+			else if (type == long.class) return 0l;
+			else if (type == float.class) return 0.0f;
+			else if (type == short.class) return (Short) (short) 0;
 			else throw new InternalError("unknown primitiv param: '" + type + '\'');
 		} else if (param.isVarArgs()) return Array.newInstance(type.getComponentType(), 0);
 		else return null;
@@ -471,11 +469,161 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		for (; i < params.length; i ++ ) {
 			ps[i] = getParam(null, null, null, params[i], clas);
 		}
-		boolean flag = c.isAccessible();
-		c.setAccessible(true);
+		setAccessible(c);
 		Object instance = c.newInstance(ps);
-		c.setAccessible(flag);
 		return clas.cast(instance);
+	}
+	
+	/**
+	 * sets the given accessible object accessible.
+	 * 
+	 * @param ao
+	 *            the accessible object to set accessible
+	 */
+	public static void setAccessible(AccessibleObject ao) {
+		try {
+			ao.setAccessible(true);
+		} catch (Exception e) {
+			try {
+				Field field = ao.getClass().getField("override");
+				Boolean t = Boolean.TRUE;
+				if (t == null | !t.booleanValue()) {
+					t = new Boolean(true);
+				}
+				unsafePut(field, ao, t);
+			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException | ClassCastException | NullPointerException e1) {
+				e.addSuppressed(e1);
+				throw e;
+			}
+		}
+	}
+	
+	public static Object getValue(Field f, Object instance) throws IllegalAccessException, IllegalArgumentException, ExceptionInInitializerError {
+		try {
+			setAccessible(f);
+			return f.get(instance);
+		} catch (Exception e) {
+			try {
+				return unsafeGet(f, instance);
+			} catch (NoSuchFieldException | SecurityException | IllegalArgumentException | IllegalAccessException e1) {
+				e.addSuppressed(e1);
+				throw e;
+			}
+		}
+	}
+	
+	/**
+	 * this method uses the sun.misc.Unsafe class to get the value of the given field.<br>
+	 * if the field contains a primitive type, the fields value will be wrapped to the given non
+	 * primitive type
+	 * 
+	 * @param field
+	 *            the field which holds the value to receive
+	 * @param instance
+	 *            the instance on wich should be worked if the field is static this value will be
+	 *            ignored
+	 * @return the value of the field on the given instance
+	 * @throws NoSuchFieldException
+	 *             if the unsafe could not be received
+	 * @throws SecurityException
+	 *             if the unsafe could not be received
+	 * @throws IllegalArgumentException
+	 *             if the unsafe could not be received
+	 * @throws IllegalAccessException
+	 *             if the unsafe could not be received
+	 */
+	@SuppressWarnings("restriction")
+	public static Object unsafeGet(Field field, Object instance) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
+		sun.misc.Unsafe unsafe = getUnsafe();
+		long off;
+		if (Modifier.isStatic(field.getModifiers())) {
+			off = unsafe.staticFieldOffset(field);
+			instance = unsafe.staticFieldBase(field);
+		} else {
+			off = unsafe.objectFieldOffset(field);
+		}
+		Class <?> type = field.getType();
+		if (type.isPrimitive()) {
+			if (type == long.class) return (Long) unsafe.getLong(instance, off);
+			else if (type == int.class) return (Integer) unsafe.getInt(instance, off);
+			else if (type == short.class) return (Short) unsafe.getShort(instance, off);
+			else if (type == byte.class) return (Byte) unsafe.getByte(instance, off);
+			else if (type == boolean.class) return (Boolean) unsafe.getBoolean(instance, off);
+			else if (type == double.class) return (Double) unsafe.getDouble(instance, off);
+			else if (type == float.class) return (Float) unsafe.getFloat(instance, off);
+			else throw new InternalError("unknown primitive type: " + type);
+		} else {
+			return unsafe.getObject(instance, off);
+		}
+	}
+	
+	/**
+	 * this method uses the sun.misc.Unsafe class to put the value of the given field.<br>
+	 * if the field contains a primitive type, the fields value will be wrapped to the given non
+	 * primitive type
+	 * 
+	 * @param field
+	 *            the given field
+	 * @param instance
+	 *            the given instance if the field is static this value will be ignored
+	 * @param value
+	 *            the new value of the field on the given instance
+	 * @throws NoSuchFieldException
+	 *             if the unsafe could not be received
+	 * @throws SecurityException
+	 *             if the unsafe could not be received
+	 * @throws IllegalArgumentException
+	 *             if the unsafe could not be received
+	 * @throws IllegalAccessException
+	 *             if the unsafe could not be received
+	 * @throws ClassCastException
+	 *             if the is not of the correct type for the given field
+	 * @throws NullPointerException
+	 *             if the field is from a primitive type, but the value is <code>null</code>
+	 */
+	@SuppressWarnings("restriction")
+	public static void unsafePut(Field field, Object instance, Object value)
+			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, ClassCastException, NullPointerException {
+		sun.misc.Unsafe unsafe = getUnsafe();
+		long off;
+		if (Modifier.isStatic(field.getModifiers())) {
+			off = unsafe.staticFieldOffset(field);
+			instance = unsafe.staticFieldBase(field);
+		} else {
+			off = unsafe.objectFieldOffset(field);
+		}
+		Class <?> type = field.getType();
+		if (type.isPrimitive()) {
+			if (type == long.class) unsafe.putLong(instance, off, (Long) value);
+			else if (type == int.class) unsafe.putInt(instance, off, (Integer) value);
+			else if (type == short.class) unsafe.putShort(instance, off, (Short) value);
+			else if (type == byte.class) unsafe.putByte(instance, off, (Byte) value);
+			else if (type == boolean.class) unsafe.putBoolean(instance, off, (Boolean) value);
+			else if (type == double.class) unsafe.putDouble(instance, off, (Double) value);
+			else if (type == float.class) unsafe.putFloat(instance, off, (Float) value);
+			else throw new InternalError("unknown primitive type: " + type);
+		} else {
+			unsafe.putObject(instance, off, type.cast(value));
+		}
+	}
+	
+	@SuppressWarnings("restriction")
+	private static sun.misc.Unsafe getUnsafe() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		Field theUnsafe = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
+		try {
+			theUnsafe.setAccessible(true);
+			return (sun.misc.Unsafe) theUnsafe.get(null);
+		} catch (IllegalArgumentException | IllegalAccessException e) {
+			try {
+				Field field = theUnsafe.getClass().getField("override");
+				field.setAccessible(true);
+				field.setBoolean(theUnsafe, true);
+				return (sun.misc.Unsafe) theUnsafe.get(null);
+			} catch (RuntimeException | IllegalAccessException | NoSuchFieldException e1) {
+				e.addSuppressed(e1);
+				throw e;
+			}
+		}
 	}
 	
 }
