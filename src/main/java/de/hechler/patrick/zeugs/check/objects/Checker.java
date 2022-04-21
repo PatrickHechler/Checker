@@ -188,7 +188,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 					result = res;
 				}
 			}
-			if (result != null) {
+			if (result == null) {
 				result = run(m, this.instance, null, null);
 				final Result finalresult = result;
 				for (Method r : this.end) {
