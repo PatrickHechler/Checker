@@ -28,11 +28,16 @@ import java.util.NoSuchElementException;
 public final class Result {
 	
 	/**
+	 * the method which should be checked for this result<br>
+	 * 
+	 */
+	public final Method met;
+	/**
 	 * this saves the return value (or <code>null</code> if it was a <code>void</code> method)<br>
 	 * if the method did not end normally (it throwed an {@link Throwable}) this value will be
 	 * <code>null</code>
 	 */
-	private final Object result;
+	public final Object result;
 	/**
 	 * here will be the {@link Throwable} which was thrown by the called {@link Method}<br>
 	 * if the method ended normally this value will be <code>null</code>
@@ -55,7 +60,8 @@ public final class Result {
 	 * @param e
 	 *            the return value of the executed {@link Method}
 	 */
-	public Result(Object e, long start, long end) {
+	public Result(Method met, Object e, long start, long end) {
+		this.met = met;
 		this.result = e;
 		this.err = null;
 		this.start = start;
@@ -68,7 +74,8 @@ public final class Result {
 	 * @param t
 	 *            the {@link Throwable} thrown while the {@link Method} was called
 	 */
-	public Result(Throwable t, long start, long end) {
+	public Result(Method met, Throwable t, long start, long end) {
+		this.met = met;
 		this.result = null;
 		this.err = t;
 		this.start = start;
@@ -82,9 +89,7 @@ public final class Result {
 	 * 
 	 * @return the total time needed for this {@link Result}
 	 */
-	public long getTime() {
-		return this.end - this.start;
-	}
+	public long getTime() { return this.end - this.start; }
 	
 	/**
 	 * if this is a 'good' {@link Result} this {@link Method} will return <code>true</code>.<br>

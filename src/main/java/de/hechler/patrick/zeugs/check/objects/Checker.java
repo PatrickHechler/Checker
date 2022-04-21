@@ -181,18 +181,32 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		Map <Method, Result> results = new HashMap <>();
 		this.init.forEach(m -> run(m, this.instance, null, null));
 		this.check.forEach(m -> {
-			this.start.forEach(r -> run(r, this.instance, null, m));
-			Result res = run(m, this.instance, null, null);
-			CheckResult.put(methods, results, m, res);
-			this.end.forEach(r -> run(r, this.instance, res, m));
+			Result result = null;
+			for (Method r : this.start) {
+				Result res = run(r, this.instance, null, m);
+				if (res.badResult()) {
+					result = res;
+				}
+			}
+			if (result != null) {
+				result = run(m, this.instance, null, null);
+				final Result finalresult = result;
+				for (Method r : this.end) {
+					Result res = run(r, this.instance, () -> finalresult, m);
+					if (res.badResult() && result.goodResult()) {
+						result = res;
+					}
+				}
+			}
+			CheckResult.put(methods, results, m, result);
 		});
-		this.finalize.forEach(m -> run(m, this.instance, this.result, null));
+		this.finalize.forEach(m -> run(m, this.instance, () -> new CheckResult(methods, results, start, System.currentTimeMillis()), null));
 		long end = System.currentTimeMillis();
 		this.result = new CheckResult(methods, results, start, end);
 	}
 	
 	
-	private static Result run(Method met, Object invoker, Object checked, Method notRun) {
+	private static Result run(Method met, Object invoker, Supplier <Object> checked, Method notRun) {
 		Result result;
 		long start = System.currentTimeMillis();
 		try {
@@ -208,7 +222,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			Object res = met.invoke(invoker, ps);
 			long end = System.currentTimeMillis();
 			met.setAccessible(flag);
-			result = new Result(res, start, end);
+			result = new Result(notRun, res, start, end);
 			// } catch (IllegalAccessException | IllegalArgumentException e) {
 			// throw new AssertionError("can't run method: '" + m.getName() + "' params: " +
 			// m.getParameterCount() + " : " + Arrays.deepToString(m.getParameterTypes())
@@ -224,12 +238,12 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			if (err instanceof ThreadDeath) {
 				throw (ThreadDeath) err;
 			}
-			result = new Result(err, start, end);
+			result = new Result(notRun, err, start, end);
 		}
 		return result;
 	}
 	
-	private static Object getParam(Object invoker, Object checked, Method notRun, Parameter param, Class <?> cls) throws AssertionError, ClassCastException {
+	private static Object getParam(Object invoker, Supplier <Object> checked, Method notRun, Parameter param, Class <?> cls) throws AssertionError, ClassCastException {
 		ParamCreater pc = param.getAnnotation(ParamCreater.class);
 		MethodParam mp = param.getAnnotation(MethodParam.class);
 		ResultParam rp = param.getAnnotation(ResultParam.class);
@@ -253,35 +267,23 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			}
 			boolean flag = met.isAccessible();
 			met.setAccessible(true);
-			Result r = run(met, invoker, null, null);
+			Result r = run(met, invoker, null, notRun);
 			if (r.badResult()) {
 				throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr());
 			}
 			met.setAccessible(flag);
 			Object result = r.getResult();
 			if (type.isPrimitive()) {
-				if (result == null) {
-					throw new NullPointerException("null pointer result for a primitive type");
-				}
-				if (type == Integer.TYPE) {
-					type = Integer.class;
-				} else if (type == Long.TYPE) {
-					type = Long.class;
-				} else if (type == Byte.TYPE) {
-					type = Byte.class;
-				} else if (type == Short.TYPE) {
-					type = Short.class;
-				} else if (type == Boolean.TYPE) {
-					type = Boolean.class;
-				} else if (type == Character.TYPE) {
-					type = Character.class;
-				} else if (type == Double.TYPE) {
-					type = Double.class;
-				} else if (type == Float.TYPE) {
-					type = Float.class;
-				} else {
-					throw new InternalError("unknown primitiv param: '" + type + '\'');
-				}
+				if (result == null) throw new NullPointerException("null pointer result for a primitive type");
+				else if (type == Integer.TYPE) type = Integer.class;
+				else if (type == Long.TYPE) type = Long.class;
+				else if (type == Byte.TYPE) type = Byte.class;
+				else if (type == Short.TYPE) type = Short.class;
+				else if (type == Boolean.TYPE) type = Boolean.class;
+				else if (type == Character.TYPE) type = Character.class;
+				else if (type == Double.TYPE) type = Double.class;
+				else if (type == Float.TYPE) type = Float.class;
+				else throw new InternalError("unknown primitiv param: '" + type + '\'');
 			}
 			return type.cast(result);
 		} else if (rp != null && !rp.disabled()) {

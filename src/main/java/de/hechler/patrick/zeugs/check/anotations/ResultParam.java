@@ -28,9 +28,10 @@ import de.hechler.patrick.zeugs.check.objects.Result;
  * if the method is executed as a {@link End} with {@link End#onlyOnce()} set to <code>true</code>,
  * the {@link Parameter} must be of type {@link CheckResult} or a super class of
  * {@link CheckResult}.<br>
- * the {@link CheckResult} given to the method will have a start time set, but no end time.
- * The end time of the check will be set after all {@link End} methods with {@link End#onlyOnce()}
- * set to <code>false</code> has been executed.
+ * the {@link CheckResult} given to the method will have a different end time than the final
+ * {@link CheckResult} saved by the checker.
+ * The final end time of the {@link CheckResult} will be the time after all {@link End} methods with
+ * {@link End#onlyOnce()} set to <code>false</code> has been executed.
  * <p>
  * if {@link #disabled()} is <code>true</code> the annotation will be ignored
  * <p>

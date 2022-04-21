@@ -26,6 +26,7 @@ import java.util.function.Supplier;
 import java.util.jar.Attributes.Name;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
+import java.util.jar.Manifest;
 
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.interfaces.TriConsumer;
@@ -744,7 +745,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	private static void readJarClassPath(JarInputStream stream, Set <URL> jarUrls, Set <Path> directories, boolean bailError) {
-		Object classPathObj = stream.getManifest().getMainAttributes().get(new Name("Class-Path"));
+		Manifest manifest = stream.getManifest();
+		if (manifest == null) {
+			return;
+		}
+		Object classPathObj = manifest.getMainAttributes().get(new Name("Class-Path"));
 		if (classPathObj == null) {
 			return;
 		}
@@ -769,7 +774,6 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 			if (classLoader instanceof URLClassLoader) {
 				for (URL url : ((URLClassLoader) classLoader).getURLs()) {
 					addFromUrl(jarUrls, directoryPaths, url, bailError);
-					System.out.println("rurl-class-loade.url[n]r->'" + url + "'");
 				}
 			} else {
 				URL res = classLoader.getResource("");
