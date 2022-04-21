@@ -609,6 +609,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	@SuppressWarnings("restriction")
 	private static sun.misc.Unsafe getUnsafe() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
+		System.out.println("get unsafe");
 		Field theUnsafe = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");
 		try {
 			theUnsafe.setAccessible(true);
