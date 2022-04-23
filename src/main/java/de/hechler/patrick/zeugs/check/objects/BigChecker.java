@@ -759,7 +759,9 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 					URL url = new URL(entry);
 					addFromUrl(jarUrls, directories, url, bailError);
 				} catch (MalformedURLException e) {
-					e.printStackTrace();
+					if (bailError) {
+						throw new RuntimeException(e);
+					}
 				}
 			}
 		} else if (bailError) {
