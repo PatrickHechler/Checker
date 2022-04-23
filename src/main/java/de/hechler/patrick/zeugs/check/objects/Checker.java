@@ -285,7 +285,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			}
 			return type.cast(result);
 		} else if (rp != null && !rp.disabled()) {
-			return type.cast(checked);
+			return type.cast(checked.get());
 		} else if (mp != null && !mp.disabled()) {
 			return type.cast(notRun);
 		} else if (type.isPrimitive()) {
