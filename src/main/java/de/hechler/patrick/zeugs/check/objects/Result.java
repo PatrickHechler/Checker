@@ -204,8 +204,10 @@ public final class Result {
 			if (err == null) {
 				if (me.getReturnType() == Void.TYPE) {
 					out.println("void");
+				} else if (this.result == null) {
+					out.println("returned " + cn + ": null");
 				} else {
-					out.println("returned " + cn + ": " + this.result);
+					out.println("returned " + cn + ": " + resultToString());
 				}
 				out.println(indent + "time=" + (this.end - this.start) + "ms");
 				return;
