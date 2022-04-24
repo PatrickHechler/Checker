@@ -4,7 +4,7 @@
     
     <groupId>de.hechler.patrick.hilfen</groupId>
     <artifactId>checker</artifactId>
-    <version>5.10.2</version>
+    <version>5.11.0</version>
     <packaging>jar</packaging>
 
     <properties>

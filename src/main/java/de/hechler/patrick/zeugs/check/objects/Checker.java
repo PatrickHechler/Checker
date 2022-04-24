@@ -196,7 +196,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 				for (Method r : this.end) {
 					Result res = run(r, this.instance, () -> finalresult, m);
 					if (res.badResult() && result.goodResult()) {
-						result = res;
+						result = new Result(res.met, res.getErr(), result.start, result.end);
 					}
 				}
 			}

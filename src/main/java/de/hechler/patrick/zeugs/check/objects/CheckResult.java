@@ -609,11 +609,15 @@ public final class CheckResult {
 			cnt.a ++ ;
 			if (r.goodResult()) {
 				cnt.b ++ ;
-				if (m.getReturnType() == Void.TYPE) {
+				if (m.getReturnType() == void.class) {
 					builder.append("good");
 				} else {
 					builder.append("good: ");
-					builder.append(r.getResult());
+					if (r.getResult() == null) {
+						builder.append("null");
+					} else {
+						builder.append(r.toSimpleString());
+					}
 				}
 			} else {
 				builder.append("bad: ");
