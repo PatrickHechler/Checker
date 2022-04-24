@@ -536,11 +536,15 @@ public final class CheckResult {
 			if (r.goodResult()) {
 				cnt.b ++ ;
 				str.append("good: ");
-				if (m.getReturnType() == Void.TYPE) {
+				if (m.getReturnType() == void.class) {
 					str.append("good");
 				} else {
 					str.append("good: ");
-					str.append(r.getResult());
+					if (r.getResult() == null) {
+						str.append("null");
+					} else {
+						str.append(r.toSimpleString());
+					}
 				}
 			} else {
 				str.append("bad: ");

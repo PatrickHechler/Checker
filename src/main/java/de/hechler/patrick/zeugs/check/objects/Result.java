@@ -202,7 +202,7 @@ public final class Result {
 			String cn = zwcls.getCanonicalName();
 			out.print(") -> ");
 			if (err == null) {
-				if (me.getReturnType() == Void.TYPE) {
+				if (me.getReturnType() == void.class) {
 					out.println("void");
 				} else if (this.result == null) {
 					out.println("returned " + cn + ": null");
