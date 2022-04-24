@@ -4,6 +4,7 @@ import java.io.PrintStream;
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Parameter;
+import java.util.Arrays;
 import java.util.NoSuchElementException;
 
 /**
@@ -29,7 +30,6 @@ public final class Result {
 	
 	/**
 	 * the method which should be checked for this result<br>
-	 * 
 	 */
 	public final Method met;
 	/**
@@ -216,7 +216,7 @@ public final class Result {
 			if (this.result != null) {
 				out.println("returned void or null");
 			} else {
-				out.println("returned: " + this.result);
+				out.println("returned: " + resultToString());
 			}
 			out.println(dindent + "time=" + (this.end - this.start) + "ms");
 			return;
@@ -248,10 +248,26 @@ public final class Result {
 		if (this.err != null) {
 			return this.err.toString();
 		} else if (this.result != null) {
-			return this.result.toString();
+			return resultToString();
 		} else {
 			return "null or void";
 		}
+	}
+	
+	private String resultToString() {
+		Class <? extends Object> cls = this.result.getClass();
+		if ( !cls.isArray()) return this.result.toString();
+		Class <?> ct = cls.getComponentType();
+		if ( !ct.isPrimitive()) return Arrays.deepToString((Object[]) this.result);
+		else if (ct == long.class) return Arrays.toString((long[]) this.result);
+		else if (ct == int.class) return Arrays.toString((int[]) this.result);
+		else if (ct == short.class) return Arrays.toString((short[]) this.result);
+		else if (ct == byte.class) return Arrays.toString((byte[]) this.result);
+		else if (ct == boolean.class) return Arrays.toString((boolean[]) this.result);
+		else if (ct == char.class) return Arrays.toString((char[]) this.result);
+		else if (ct == double.class) return Arrays.toString((double[]) this.result);
+		else if (ct == float.class) return Arrays.toString((float[]) this.result);
+		else throw new InternalError("unknown primitive type: " + ct);
 	}
 	
 }
