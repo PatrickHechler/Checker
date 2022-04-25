@@ -225,17 +225,34 @@ public final class Result {
 		}
 		out.println(indent + "time=" + (this.end - this.start) + "ms");
 		// err != null
-		Class <?> zwcls = err.getClass();
-		String cn = zwcls.getCanonicalName();
-		out.println(indent + "exception: " + (cn == null ? zwcls.getName() : cn));
-		out.println(indent + "message: " + err.getMessage());
-		out.println(indent + "localized message: " + this.err.getLocalizedMessage());
-		out.println(indent + "exeption to string: " + this.err.toString());
+		printErr(out, indent, dindent, err);
+	}
+	
+	private static void printErr(PrintStream out, String indent, String dindent, Throwable t) {
+		Class <?> cls = t.getClass();
+		String cn = cls.getCanonicalName();
+		out.println(indent + "exception: " + (cn == null ? cls.getName() : cn));
+		out.println(indent + "message: " + t.getMessage());
+		out.println(indent + "localized message: " + t.getLocalizedMessage());
+		out.println(indent + "exeption to string: " + t.toString());
 		out.println(indent + "stack trace:");
-		StackTraceElement[] st = err.getStackTrace();
+		StackTraceElement[] st = t.getStackTrace();
 		for (int i = 0; i < st.length; i ++ ) {
 			StackTraceElement ste = st[i];
-			out.println(dindent + "at " + ste.getClassName() + '.' + ste.getMethodName() + '(' + ste.getFileName() + ':' + ste.getLineNumber() + ')');
+			out.println(dindent + "at " + ste.toString());
+		}
+		Throwable cause = t.getCause();
+		if (cause != null) {
+			out.println(indent + "caused by:");
+			printErr(out, indent + "    ", dindent + "    ", cause);
+		}
+		Throwable[] sup = t.getSuppressed();
+		if (sup != null && sup.length > 0) {
+			out.println(indent + "suppressed: " + sup.length);
+			for (int i = 0; i < sup.length; i ++ ) {
+				out.println(indent + "suppressed [" + i + "]:");
+				printErr(out, indent + "    ", dindent + "    ", sup[i]);
+			}
 		}
 	}
 	
