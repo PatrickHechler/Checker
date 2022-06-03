@@ -11,8 +11,7 @@ import java.util.function.BiConsumer;
 
 /**
  * this class saves the {@link Result}s of a {@link Checker}.<br>
- * The {@link Result} of each checked {@link Method} is accessible with the
- * {@link #getResult(Method)} method
+ * The {@link Result} of each checked {@link Method} is accessible with the {@link #getResult(Method)} method
  * <p>
  * in addition to all checked methods, the executed time for all checks is saved.<br>
  * to get the time needed for the execution the class check {@link #getTime()} can be used.<br>
@@ -34,17 +33,16 @@ public final class CheckResult {
 	/**
 	 * the time when the checks were started
 	 */
-	public final long start;
+	public final long                  start;
 	/**
 	 * the time when all checks were finished
 	 */
-	public final long end;
+	public final long                  end;
 	
 	/**
 	 * creates a new {@link CheckResult} with the given values.
 	 * <p>
-	 * to build the {@link #methods} and {@link #results} maps the
-	 * {@link #put(Map, Map, Method, Result)} method is recommended.
+	 * to build the {@link #methods} and {@link #results} maps the {@link #put(Map, Map, Method, Result)} method is recommended.
 	 * 
 	 * @param methods
 	 *            this map contains the methods which has been checked.
@@ -67,24 +65,19 @@ public final class CheckResult {
 	 * 
 	 * @return the total time needed for this {@link CheckResult}
 	 */
-	public long getTime() { return end - start; }
+	public long getTime() {
+		return end - start;
+	}
 	
 	/**
-	 * this method saves the {@link Result} with the {@link Method} in the {@code results} and the
-	 * method with its {@link Method#getName() name} (and {@link Method#getParameters()
-	 * params}) in the {@code methods}.<br>
-	 * When the {@link Method} has no params (<code>{@link Method#getParameterCount()} == 0</code>)
-	 * there will be two links created to the {@link Method} in {@code methods}: one
-	 * wit only the {@link Method#getName() name} and one with the {@link Method#getName() name} and the
-	 * braces '()'.<br>
-	 * When the {@link Method} has params (<code>{@link Method#getParameterCount()} > 0</code>) there
-	 * will be one link in the {@code methods}: it will start with the
-	 * {@link Method#getName() name} and then the braces. between the braces will be the
-	 * {@link Method#getParameters() params} with only their {@link Parameter#getType() type} as
-	 * fully qualifying name. if a param is a {@link Parameter#isVarArgs() varArg}, it will have '...'
-	 * at the end and a second with '[]' at the end all other arrays will have only
-	 * '[]' at the end. The {@link Method#getParameters() params} will be separated by
-	 * <code>', '</code>.
+	 * this method saves the {@link Result} with the {@link Method} in the {@code results} and the method with its {@link Method#getName() name} (and {@link Method#getParameters() params}) in the
+	 * {@code methods}.<br>
+	 * When the {@link Method} has no params (<code>{@link Method#getParameterCount()} == 0</code>) there will be two links created to the {@link Method} in {@code methods}: one wit only the
+	 * {@link Method#getName() name} and one with the {@link Method#getName() name} and the braces '()'.<br>
+	 * When the {@link Method} has params (<code>{@link Method#getParameterCount()} > 0</code>) there will be one link in the {@code methods}: it will start with the {@link Method#getName() name} and
+	 * then the braces. between the braces will be the {@link Method#getParameters() params} with only their {@link Parameter#getType() type} as fully qualifying name. if a param is a
+	 * {@link Parameter#isVarArgs() varArg}, it will have '...' at the end and a second with '[]' at the end all other arrays will have only '[]' at the end. The {@link Method#getParameters() params}
+	 * will be separated by <code>', '</code>.
 	 * 
 	 * @param methods
 	 *            the map containing the methods refereed by their names
@@ -202,14 +195,11 @@ public final class CheckResult {
 	/**
 	 * returns the {@link Method} of the {@link #methods} by it's name
 	 * <p>
-	 * the method name is the name of the method plus it's parameter classes wrapped in parentheses and
-	 * separated with a comma and a single space character.<br>
+	 * the method name is the name of the method plus it's parameter classes wrapped in parentheses and separated with a comma and a single space character.<br>
 	 * if the method has no parameters, the parentheses are optional.
 	 * <p>
-	 * if due to super checkers multiple methods with the name has been checked it is not defined, which
-	 * method will be returned.<br>
-	 * but if at least one of the results is a {@link Result#badResult()} it is ensured that a
-	 * {@link Result#badResult()} will be returned
+	 * if due to super checkers multiple methods with the name has been checked it is not defined, which method will be returned.<br>
+	 * but if at least one of the results is a {@link Result#badResult()} it is ensured that a {@link Result#badResult()} will be returned
 	 * 
 	 * @param mname
 	 *            the name of the {@link Method}
@@ -224,41 +214,35 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for a
-	 * {@link Method} with this name (and with the params if the {@link Method} have some),
-	 * <code>false</code> otherwise
+	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some), <code>false</code>
+	 * otherwise
 	 * 
 	 * @param mname
 	 *            the name of the {@link Method} and their potentially params
-	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for a
-	 *             {@link Method} with this name (and with the params if the {@link Method} have some),
-	 *             <code>false</code> otherwise
+	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for a {@link Method} with this name (and with the params if the {@link Method} have some), <code>false</code>
+	 *         otherwise
 	 */
 	public boolean checked(String mname) {
 		return this.methods.containsKey(mname);
 	}
 	
 	/**
-	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for this
-	 * {@link Method}, <code>false</code> otherwise
+	 * returns <code>true</code> if this {@link CheckResult} contains a {@link Result} for this {@link Method}, <code>false</code> otherwise
 	 * 
 	 * @param m
 	 *            the {@link Method} which is potentially saved in this {@link CheckResult}
-	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for this
-	 *             {@link Method}, <code>false</code> otherwise
+	 * @return <code>true</code> if this {@link CheckResult} contains a {@link Result} for this {@link Method}, <code>false</code> otherwise
 	 */
 	public boolean checked(Method m) {
 		return this.results.containsKey(m);
 	}
 	
 	/**
-	 * returns <code>true</code> if the execution of the method went as expected (if no
-	 * {@link Throwable} was thrown)
+	 * returns <code>true</code> if the execution of the method went as expected (if no {@link Throwable} was thrown)
 	 * 
 	 * @param mname
 	 *            the name of the {@link Method}
-	 * @return <code>true</code> if the execution of the method went as expected (if no
-	 *             {@link Throwable} was thrown)
+	 * @return <code>true</code> if the execution of the method went as expected (if no {@link Throwable} was thrown)
 	 * @throws NoSuchElementException
 	 *             if no {@link Result} is saved for the method in this {@link CheckResult}
 	 */
@@ -269,13 +253,11 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the execution of the {@link Method} went as expected (if no
-	 * {@link Throwable} was thrown)
+	 * returns <code>true</code> if the execution of the {@link Method} went as expected (if no {@link Throwable} was thrown)
 	 * 
 	 * @param m
 	 *            the {@link Method} identifier
-	 * @return <code>true</code> if the execution of the {@link Method} went as expected (if no
-	 *             {@link Throwable} was thrown)
+	 * @return <code>true</code> if the execution of the {@link Method} went as expected (if no {@link Throwable} was thrown)
 	 * @throws NoSuchElementException
 	 *             if no {@link Result} is saved for the {@link Method} in this {@link CheckResult}
 	 */
@@ -288,12 +270,10 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * this method will return <code>true</code> if and only if all Checks went as
-	 * {@link Result#goodResult() expected} (without any {@link Throwable} thrown). if at least one
-	 * Check is {@link Result#badResult() bad} this method will return <code>false</code>
+	 * this method will return <code>true</code> if and only if all Checks went as {@link Result#goodResult() expected} (without any {@link Throwable} thrown). if at least one Check is
+	 * {@link Result#badResult() bad} this method will return <code>false</code>
 	 * 
-	 * @return <code>true</code> if none of the {@link #results} is a {@link Result#badResult() bad
-	 *             Result}
+	 * @return <code>true</code> if none of the {@link #results} is a {@link Result#badResult() bad Result}
 	 * @see #wentUnexpected()
 	 */
 	public boolean wentExpected() {
@@ -304,14 +284,12 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad
-	 * Result} and <code>false</code> if not. The {@link Method} will be searched
-	 * in the {@link #methods} map. The {@link Result} will be searched in the {@link #results} map
+	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Method} will be searched in the
+	 * {@link #methods} map. The {@link Result} will be searched in the {@link #results} map
 	 * 
 	 * @param mname
 	 *            the name of the method to search in the {@link #methods}
-	 * @return <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad
-	 *             Result} and <code>false</code> if not
+	 * @return <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not
 	 * @throws NoSuchElementException
 	 *             if there is no mapping in the {@link #methods} for the given name
 	 * @see #wentUnexpected(Method)
@@ -327,14 +305,12 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad
-	 * Result} and <code>false</code> if not. The {@link Result} will be searched
-	 * in the {@link #results} map
+	 * returns <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not. The {@link Result} will be searched in the
+	 * {@link #results} map
 	 * 
 	 * @param m
 	 *            the {@link Method} of which the {@link Result} is checked
-	 * @return <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad
-	 *             Result} and <code>false</code> if not
+	 * @return <code>true</code> if the {@link Result} of the method is a {@link Result#badResult() bad Result} and <code>false</code> if not
 	 * @throws NoSuchElementException
 	 *             if there is no mapping in the {@link #results} for the given {@link Method}
 	 * @see #wentUnexpected(String)
@@ -375,13 +351,11 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns the {@link Result} from the {@link #results} by the {@link Method} from the
-	 * {@link #methods} by it's name
+	 * returns the {@link Result} from the {@link #results} by the {@link Method} from the {@link #methods} by it's name
 	 * 
 	 * @param mname
 	 *            the name of the {@link Method}
-	 * @return the {@link Result} saved in the {@link #results} by the {@link Method} saved in the
-	 *             {@link #methods}
+	 * @return the {@link Result} saved in the {@link #results} by the {@link Method} saved in the {@link #methods}
 	 * @throws NoSuchElementException
 	 *             if there is no {@link Method} in the {@link #methods} for the name
 	 * @see #getResult(Method)
@@ -394,11 +368,9 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns all {@link Method}s, which {@link #wentUnexpected(Method) went unexpected}, with their
-	 * {@link Throwable}s.
+	 * returns all {@link Method}s, which {@link #wentUnexpected(Method) went unexpected}, with their {@link Throwable}s.
 	 * 
-	 * @return all {@link Method}s, which {@link #wentUnexpected(Method) went unexpected}, with their
-	 *             {@link Throwable}s.
+	 * @return all {@link Method}s, which {@link #wentUnexpected(Method) went unexpected}, with their {@link Throwable}s.
 	 */
 	public Map <Method, Throwable> allUnexpected() {
 		Map <Method, Throwable> ret = new HashMap <>();
@@ -411,11 +383,9 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * returns all {@link Method}s, which {@link #wentExpected(Method) went expected}, with their
-	 * returned {@link Object}s.
+	 * returns all {@link Method}s, which {@link #wentExpected(Method) went expected}, with their returned {@link Object}s.
 	 * 
-	 * @return all {@link Method}s, which {@link #wentExpected(Method) went expected}, with their
-	 *             returned {@link Object}s.
+	 * @return all {@link Method}s, which {@link #wentExpected(Method) went expected}, with their returned {@link Object}s.
 	 */
 	public Map <Method, Object> allExpected() {
 		Map <Method, Object> ret = new HashMap <>();
@@ -450,8 +420,7 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * iterates though {@link #results} and invokes on every {@link Result#badResult() unexpected}
-	 * {@link Result} the consumer
+	 * iterates though {@link #results} and invokes on every {@link Result#badResult() unexpected} {@link Result} the consumer
 	 * 
 	 * @param c
 	 *            what should be done for all {@link Result#badResult() unexpected} {@link Result}s
@@ -464,8 +433,7 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * iterates though {@link #results} and invokes on every {@link Result#goodResult() expected}
-	 * {@link Result} the consumer
+	 * iterates though {@link #results} and invokes on every {@link Result#goodResult() expected} {@link Result} the consumer
 	 * 
 	 * @param c
 	 *            what should be done for all {@link Result#goodResult() expected} {@link Result}s
@@ -478,8 +446,7 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * prints this {@link CheckResult} on the {@link System#out default out} with an indention of
-	 * {@code 4}
+	 * prints this {@link CheckResult} on the {@link System#out default out} with an indention of {@code 4}
 	 */
 	public void print() {
 		print(System.out, 4);
@@ -563,25 +530,19 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented
-	 * with spaces by the doubled given indention.<br>
-	 * The given name will be set to the beginning and be indented with spaces by the given
-	 * indention.<br>
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * The given {@code counter} will be modified:<br>
-	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this
-	 * {@link CheckResult}<br>
-	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in
-	 * this {@link CheckResult}
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param builder
-	 *            the {@link StringBuilder} to be filled with a detailed string representation of this
-	 *            {@link CheckResult}
+	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will
-	 *            be added to {@link TwoInts#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link TwoInts#b b}
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good Result} number will be
+	 *            added to {@link TwoInts#b b}
 	 * @param classIndention
 	 *            the indention in spaces of this {@link CheckResult}
 	 * @param methodIndention
@@ -639,9 +600,7 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * prints a all results in a detailed format
-	 * this just uses {@link #detailedPrint(PrintStream, int, int)} with a {@code doubleIndention} which
-	 * is <code>(indention * 2)}</code><br>
+	 * prints a all results in a detailed format this just uses {@link #detailedPrint(PrintStream, int, int)} with a {@code doubleIndention} which is <code>(indention * 2)}</code><br>
 	 * the time will be in the first line, which will NOT be intended!
 	 * 
 	 * @param out
@@ -666,38 +625,47 @@ public final class CheckResult {
 	 *            the complete indention for the doubled indented lines
 	 */
 	public void detailedPrint(PrintStream out, int indention, int doubleIndented) {
-		String indent;
-		String dindent;
+		String indent = null;
+		String dindent = null;
 		{
 			StringBuilder zw = new StringBuilder(Math.max(indention, doubleIndented));
-			for (int i = 0; i < indention; i ++ ) {
+			for (int i = 0; i < Math.min(indention, doubleIndented); i ++ ) {
 				zw.append(' ');
 			}
-			indent = zw.toString();
-			for (int i = 0; i < doubleIndented; i ++ ) {
+			if (indention < doubleIndented) {
+				indent = zw.toString();
+			} else {
+				dindent = zw.toString();
+			}
+			for (int i = 0; i < Math.max(doubleIndented, indention); i ++ ) {
 				zw.append(' ');
 			}
 			if (doubleIndented < indention) {
-				dindent = indent.substring(indention - doubleIndented);
+				indent = zw.toString();
 			} else {
 				dindent = zw.toString();
 			}
 		}
-		out.println("time=" + (end - start) + "ms");
+		int cnt = 0;
+		for (Result r : this.results.values()) {
+			if (r.goodResult()) {
+				cnt ++ ;
+			}
+		}
+		out.println("time=" + (end - start) + "ms " + cnt + "/" + this.results.size());
+		final String i = indent, di = dindent;
 		this.forAll((m, r) -> {
-			r.detailedPrint(out, m, indent, dindent);
+			r.detailedPrint(out, m, i, di);
 		});
 	}
 	
 	/**
-	 * prints a all unexpected results with their stack traces
-	 * this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a
-	 * {@code doubleIndention} which is <code>(indention * 2)}</code><br>
+	 * prints a all unexpected results with their stack traces this just uses {@link #detailedPrintUnexpected(PrintStream, int, int)} with a {@code doubleIndention} which is
+	 * <code>(indention * 2)}</code><br>
 	 * the time will be in the first line, which will NOT be intended!
 	 * 
 	 * @param out
-	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s
-	 *            should be printed
+	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
 	 * @param indention
 	 *            the normal indention
 	 * @see #detailedPrintUnexpected(PrintStream, int, int)
@@ -711,8 +679,7 @@ public final class CheckResult {
 	 * the time will be in the first line, which will NOT be intended!
 	 * 
 	 * @param out
-	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s
-	 *            should be printed
+	 *            the {@link PrintStream} on which the {@link Result#badResult() bad} {@link Result}s should be printed
 	 * @param indention
 	 *            the normal indention
 	 * @param doubleIndented
@@ -745,60 +712,44 @@ public final class CheckResult {
 	}
 	
 	/**
-	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented
-	 * with spaces by the doubled given indention.<br>
-	 * The given name will be set to the beginning and be indented with spaces by the given
-	 * indention.<br>
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * The given {@code counter} will be modified:<br>
-	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this
-	 * {@link CheckResult}<br>
-	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in
-	 * this {@link CheckResult}
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param builder
-	 *            the {@link StringBuilder} to be filled with a detailed string representation of this
-	 *            {@link CheckResult}
+	 *            the {@link StringBuilder} to be filled with a detailed string representation of this {@link CheckResult}
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will
-	 *            be added to {@link TwoInts#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link TwoInts#b b}
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good Result} number will be
+	 *            added to {@link TwoInts#b b}
 	 * @param indention
-	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces
-	 *            for the methods of this {@link CheckResult}
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 */
 	public void toString(StringBuilder builder, String name, TwoInts counter, int indention) {
 		toString(builder, name, counter, indention, indention << 1);
 	}
 	
 	/**
-	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented
-	 * with spaces by the doubled given indention.<br>
-	 * The given name will be set to the beginning and be indented with spaces by the given
-	 * indention.<br>
+	 * creates a detailed string which contains all {@link Result}s of this {@link CheckResult} indented with spaces by the doubled given indention.<br>
+	 * The given name will be set to the beginning and be indented with spaces by the given indention.<br>
 	 * The given {@code counter} will be modified:<br>
-	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this
-	 * {@link CheckResult}<br>
-	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in
-	 * this {@link CheckResult}
+	 * {@link TwoInts#a} will be incremented by the number of {@link Result}s in this {@link CheckResult}<br>
+	 * {@link TwoInts#b} will be incremented by the number of {@link Result#getResult() good Result}s in this {@link CheckResult}
 	 * 
 	 * @param name
 	 *            the name of this {@link CheckResult}
 	 * @param counter
-	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will
-	 *            be added to {@link TwoInts#a a} and the {@link Result#getResult() good
-	 *            Result} number will be added to {@link TwoInts#b b}
+	 *            the {@link TwoInts} will be changed as above specified: the {@link Result}number will be added to {@link TwoInts#a a} and the {@link Result#getResult() good Result} number will be
+	 *            added to {@link TwoInts#b b}
 	 * @param indention
-	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces
-	 *            for the methods of this {@link CheckResult}
+	 *            the indention in spaces of this {@link CheckResult} and the half indention in spaces for the methods of this {@link CheckResult}
 	 * @return creates a detailed {@link String} representing this {@link CheckResult}
-	 * @implNote it works like <code>{{@link StringBuilder} zw = new
-	 *               {@link StringBuilder#StringBuilder() StringBuilder()};
-	 *               {@link #toString(StringBuilder, String, TwoInts, int)
-	 *               cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString()
-	 *               zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params
-	 *               are the same as by calling this method
+	 * @implNote it works like <code>{{@link StringBuilder} zw = new {@link StringBuilder#StringBuilder() StringBuilder()}; {@link #toString(StringBuilder, String, TwoInts, int)
+	 *           cr.toString(zw,name,counter,indention)}; return {@link StringBuilder#toString() zw.toString()};} when {@code cr} is the {@link CheckResult} and the other params are the same as by
+	 *           calling this method
 	 * @see #toString(StringBuilder, String, TwoInts, int)
 	 */
 	public String toString(String name, TwoInts counter, int indention) {

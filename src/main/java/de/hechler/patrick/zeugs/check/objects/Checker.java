@@ -487,7 +487,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			try {
 				Field field = ao.getClass().getField("override");
 				Boolean t = Boolean.TRUE;
-				if (t == null | !t.booleanValue()) {
+				if (t == null || !t.booleanValue()) {
 					t = new Boolean(true);
 				}
 				unsafePut(field, ao, t);
