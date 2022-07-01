@@ -36,49 +36,41 @@ import de.hechler.patrick.zeugs.check.interfaces.TwoValues;
  * to generate a {@link BigChecker} the {@code generateBigChecker(...)} methods can be used. <br>
  * the two constructors also can be used to create {@link BigChecker} instances.
  * <p>
- * to run multiple checks without caring about the {@link BigChecker} object, the
- * {@code checkAll(...)} methods are recommended.
+ * to run multiple checks without caring about the {@link BigChecker} object, the {@code checkAll(...)} methods are recommended.
  * <p>
- * with the {@code tryGenerateBigChecker(...)} it is possible to read the checked classes from
- * packages.<br>
+ * with the {@code tryGenerateBigChecker(...)} it is possible to read the checked classes from packages.<br>
  * with the {@code tryCheckAll(...)} it is possible to check checked classes read from packages.<br>
- * because of the java {@link ClassLoader} nature the {@code try...} methods can not guarantee to
- * succeed.<br>
+ * because of the java {@link ClassLoader} nature the {@code try...} methods can not guarantee to succeed.<br>
  * the {@code try...} methods try to find the source of the class loader and all its parents.<br>
  * then the {@code try...} methods try to search in the sources from the class loaders.
  * <p>
- * even if it is possible to subclass this class it can not affect the check process, because all
- * non {@code private} methods are marked either as {@code static} or {@code final}
- * (and {@code public}).
+ * even if it is possible to subclass this class it can not affect the check process, because all non {@code private} methods are marked either as {@code static} or {@code final} (and {@code public}).
  * 
  * @author Patrick
  */
 public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsumer <TwoValues <Class <?>, Checker>, Map <String, Class <?>>, Map <Class <?>, CheckResult>> {
 	
 	/**
-	 * the {@link Iterator} wich supplies this {@link BigChecker} with the classes and checkers wich
-	 * should be checked.
+	 * the {@link Iterator} wich supplies this {@link BigChecker} with the classes and checkers wich should be checked.
 	 */
 	private final Iterator <TwoValues <Class <?>, Checker>> checkers;
 	/**
 	 * the maximum amount of checker threads wich should be created or {@code -1} for infinity.<br>
-	 * when set to {@code 0} no checker threads will be created and all checks will be executed in the
-	 * same thread.
+	 * when set to {@code 0} no checker threads will be created and all checks will be executed in the same thread.
 	 */
-	private volatile int maxCheckers;
+	private volatile int                                    maxCheckers;
 	/**
 	 * the current number of checker threads.
 	 */
-	private volatile int currentCheckers;
+	private volatile int                                    currentCheckers;
 	/**
 	 * the result of this {@link BigChecker}
 	 */
-	private BigCheckResult result;
+	private BigCheckResult                                  result;
 	
 	/**
 	 * creates a new {@link BigChecker} from the given {@link Iterator}.<br>
-	 * this constructor uses the current number of available Processors for the JVM
-	 * ({@link Runtime#availableProcessors()}) as its {@link #maxCheckers}.
+	 * this constructor uses the current number of available Processors for the JVM ({@link Runtime#availableProcessors()}) as its {@link #maxCheckers}.
 	 * 
 	 * @param checkers
 	 *            the {@link Iterator} wich supplies this big checker with it's classes and checkers
@@ -88,14 +80,12 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * creates a new {@link BigChecker} from the given {@link Iterator} and the given
-	 * {@code macCheckers}.
+	 * creates a new {@link BigChecker} from the given {@link Iterator} and the given {@code macCheckers}.
 	 * 
 	 * @param checkers
 	 *            the {@link Iterator} wich supplies this big checker with it's classes and checkers
 	 * @param maxCheckers
-	 *            the maximum number of threads which should be created for the checker threads or
-	 *            {@code -1} for infinity
+	 *            the maximum number of threads which should be created for the checker threads or {@code -1} for infinity
 	 */
 	public BigChecker(Iterator <TwoValues <Class <?>, Checker>> checkers, int maxCheckers) {
 		this.checkers = checkers;
@@ -108,10 +98,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * returns the current maximal number of checker threads
 	 * 
-	 * @return
-	 *             the current maximal number of checker threads
+	 * @return the current maximal number of checker threads
 	 */
-	public final int getMaxCheckers() { return maxCheckers; }
+	public final int getMaxCheckers() {
+		return maxCheckers;
+	}
 	
 	/**
 	 * sets the maximal value of checker threads
@@ -131,8 +122,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * returns <code>true</code> if this {@link BigChecker} has already been executed
 	 * 
-	 * @return
-	 *             <code>true</code> if this {@link BigChecker} has already been executed
+	 * @return <code>true</code> if this {@link BigChecker} has already been executed
 	 */
 	public final boolean checkedAlready() {
 		return this.result != null;
@@ -153,79 +143,80 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * generates the {@link #result} of this {@link BigChecker}.
 	 * <p>
-	 * unlike the {@link Checker}, this method will directly return without doing anything, when the
-	 * {@link #result} has already been generated.
+	 * unlike the {@link Checker}, this method will directly return without doing anything, when the {@link #result} has already been generated.
 	 * <p>
 	 * this method will return after all class checks has been executed.
 	 */
 	@Override
 	public final void run() {
-		if (this.result != null) {
-			return;
-		}
-		long start = System.currentTimeMillis();
-		if ( !this.checkers.hasNext()) {
-			this.result = new BigCheckResult(Collections.emptyMap(), Collections.emptyMap(), start, System.currentTimeMillis());
-			return;
-		}
-		List <TwoValues <Class <?>, Checker>> singleThreadClasses = new ArrayList <>();
-		Map <String, Class <?>> classes = new HashMap <>();
-		Map <Class <?>, CheckResult> results = new HashMap <>();
-		TwoValues <Class <?>, Checker> old = null;
-		boolean retry = false;
-		while (retry || this.checkers.hasNext()) {
-			TwoValues <Class <?>, Checker> next = retry ? old : this.checkers.next();
-			retry = false;
-			CheckClass checkClass = next.getValueA().getAnnotation(CheckClass.class);
-			if (checkClass == null || checkClass.singleThread()) {
-				singleThreadClasses.add(next);
-				continue;
+		synchronized (this.checkers) {
+			if (this.result != null) {
+				return;
 			}
-			if (this.maxCheckers == -1 || this.currentCheckers < this.maxCheckers) {
-				synchronized (this) {
-					this.currentCheckers ++ ;
+			long start = System.currentTimeMillis();
+			if ( !this.checkers.hasNext()) {
+				this.result = new BigCheckResult(Collections.emptyMap(), Collections.emptyMap(), start, System.currentTimeMillis());
+				return;
+			}
+			List <TwoValues <Class <?>, Checker>> singleThreadClasses = new ArrayList <>();
+			Map <String, Class <?>> classes = new HashMap <>();
+			Map <Class <?>, CheckResult> results = new HashMap <>();
+			TwoValues <Class <?>, Checker> old = null;
+			boolean retry = false;
+			while (retry || this.checkers.hasNext()) {
+				TwoValues <Class <?>, Checker> next = retry ? old : this.checkers.next();
+				retry = false;
+				CheckClass checkClass = next.getValueA().getAnnotation(CheckClass.class);
+				if (checkClass == null || checkClass.singleThread()) {
+					singleThreadClasses.add(next);
+					continue;
 				}
-				new Thread(() -> {
-					try {
-						accept(next, classes, results);
-					} finally {
-						synchronized (this) {
-							this.currentCheckers -- ;
-							notifyAll();
+				if (this.maxCheckers == -1 || this.currentCheckers < this.maxCheckers) {
+					synchronized (this) {
+						this.currentCheckers ++ ;
+					}
+					new Thread(() -> {
+						try {
+							accept(next, classes, results);
+						} finally {
+							synchronized (this) {
+								this.currentCheckers -- ;
+								notifyAll();
+							}
+						}
+					}, "Checker : " + next.getValueA().getName()).start();
+				} else if (this.maxCheckers == 0) {
+					accept(next, classes, results);
+				} else {
+					while (this.maxCheckers <= this.currentCheckers && this.maxCheckers != -1) {
+						try {
+							synchronized (this) {
+								wait(10000L);
+							}
+						} catch (InterruptedException e) {
+							e.printStackTrace();
 						}
 					}
-				}, "Checker : " + next.getValueA().getName()).start();
-			} else if (this.maxCheckers == 0) {
-				accept(next, classes, results);
-			} else {
-				while (this.maxCheckers <= this.currentCheckers && this.maxCheckers != -1) {
-					try {
-						synchronized (this) {
-							wait(10000L);
+					retry = true;
+				}
+			}
+			while (this.currentCheckers > 0) {
+				try {
+					synchronized (this) {
+						if (this.currentCheckers == 0) {
+							break;
 						}
-					} catch (InterruptedException e) {
-						e.printStackTrace();
+						wait(10000L);
 					}
+				} catch (InterruptedException e) {
+					e.printStackTrace();
 				}
-				retry = true;
 			}
+			assert this.currentCheckers == 0;
+			singleThreadClasses.forEach(tv -> this.accept(tv, classes, results));
+			long end = System.currentTimeMillis();
+			this.result = new BigCheckResult(classes, results, start, end);
 		}
-		while (this.currentCheckers > 0) {
-			try {
-				synchronized (this) {
-					if (this.currentCheckers == 0) {
-						break;
-					}
-					wait(10000L);
-				}
-			} catch (InterruptedException e) {
-				e.printStackTrace();
-			}
-		}
-		assert this.currentCheckers == 0;
-		singleThreadClasses.forEach(tv -> this.accept(tv, classes, results));
-		long end = System.currentTimeMillis();
-		this.result = new BigCheckResult(classes, results, start, end);
 	}
 	
 	/**
@@ -249,9 +240,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * works like {@link #checkAll(boolean, Class...)}, but instead of an class array this class uses
-	 * the full class names and the given {@link ClassLoader} to get the classes which should be
-	 * checked.
+	 * works like {@link #checkAll(boolean, Class...)}, but instead of an class array this class uses the full class names and the given {@link ClassLoader} to get the classes which should be checked.
 	 * 
 	 * @param needEnabedCheckClass
 	 *            if only classes annotated with {@link CheckClass} should be checked
@@ -275,8 +264,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * works like {@link #checkAll(boolean, ClassLoader, String...)}, but uses to load classes the class
-	 * loader of the {@link BigChecker} class.
+	 * works like {@link #checkAll(boolean, ClassLoader, String...)}, but uses to load classes the class loader of the {@link BigChecker} class.
 	 * 
 	 * @param needEnabedCheckClass
 	 *            if only classes annotated with {@link CheckClass} should be checked
@@ -300,8 +288,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * works like {@link #checkAll(boolean, Iterator)}, but uses instead of an {@link Iterator} an
-	 * {@link Class} array.
+	 * works like {@link #checkAll(boolean, Iterator)}, but uses instead of an {@link Iterator} an {@link Class} array.
 	 * 
 	 * @param needEnabedCheckClass
 	 *            if only classes annotated with {@link CheckClass} should be checked
@@ -318,8 +305,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	
 	/**
 	 * checks all classes from the iterator.<br>
-	 * if {@code needEnabledCheckClass} is <code>true</code> only classes which are annotated with
-	 * {@link CheckClass} and are not {@link CheckClass#disabled()} are checked.
+	 * if {@code needEnabledCheckClass} is <code>true</code> only classes which are annotated with {@link CheckClass} and are not {@link CheckClass#disabled()} are checked.
 	 * 
 	 * @param needEnabedCheckClass
 	 *            if only classes annotated with {@link CheckClass} should be checked
@@ -336,14 +322,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
 	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass} will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the {@link BigChecker}.
 	 * 
 	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be {@link CheckClass#disabled()}.
 	 * @param classes
 	 *            the array containing the classes to check
 	 * @return the generated {@link BigChecker}
@@ -356,27 +339,19 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
 	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass} will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the {@link BigChecker}.
 	 * <p>
-	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
-	 * checks.<br>
-	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
-	 * the Multithreading.<br>
-	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
-	 * calling threads of the {@link BigChecker#run()}.<br>
+	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the checks.<br>
+	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for the Multithreading.<br>
+	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the calling threads of the {@link BigChecker#run()}.<br>
 	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
-	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
-	 * {@link IllegalArgumentException} will be thrown.
+	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an {@link IllegalArgumentException} will be thrown.
 	 * 
 	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be {@link CheckClass#disabled()}.
 	 * @param maxWorkers
-	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
-	 *            when all checks should be executed in the same thread.
+	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0} when all checks should be executed in the same thread.
 	 * @param classes
 	 *            the array containing the classes to check
 	 * @return the generated {@link BigChecker}
@@ -392,14 +367,11 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
 	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass} will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the {@link BigChecker}.
 	 * 
 	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be {@link CheckClass#disabled()}.
 	 * @param classes
 	 *            the iterator containing the classes to check
 	 * @return the generated {@link BigChecker}
@@ -412,27 +384,19 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	/**
 	 * this will generate a {@link BigChecker} ready to check the given {@code classes}.
 	 * <p>
-	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass}
-	 * will be given to the {@link BigChecker}.<br>
-	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the
-	 * {@link BigChecker}.
+	 * if {@code needCheckClass} is <code>true</code> only classes annotated with {@link CheckClass} will be given to the {@link BigChecker}.<br>
+	 * if {@code needCheckClass} is <code>false</code> all classes in the array will be given to the {@link BigChecker}.
 	 * <p>
-	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the
-	 * checks.<br>
-	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for
-	 * the Multithreading.<br>
-	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the
-	 * calling threads of the {@link BigChecker#run()}.<br>
+	 * {@code maxWorkers} defines how much threads should be started for the checkers to execute the checks.<br>
+	 * every checker will run in a own thread and not in multiple threads, so no checker has to care for the Multithreading.<br>
+	 * if {@code maxWorters} is {@code 0} no threads will be created and all checks are executed in the calling threads of the {@link BigChecker#run()}.<br>
 	 * if {@code maxWorters} is {@code -1} the maximum amount of workers will be infinity.<br>
-	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an
-	 * {@link IllegalArgumentException} will be thrown.
+	 * if {@code maxWorkers} is a negative value smaller than {@code -1} an {@link IllegalArgumentException} will be thrown.
 	 * 
 	 * @param needCheckClass
-	 *            if the given classes need to be annotated with {@link CheckClass} and not be
-	 *            {@link CheckClass#disabled()}.
+	 *            if the given classes need to be annotated with {@link CheckClass} and not be {@link CheckClass#disabled()}.
 	 * @param maxWorkers
-	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0}
-	 *            when all checks should be executed in the same thread.
+	 *            the maximum amount of worker running threads, {@code -1} for infinity or {@code 0} when all checks should be executed in the same thread.
 	 * @param classes
 	 *            the iterator containing the classes to check
 	 * @return the generated {@link BigChecker}
@@ -473,8 +437,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with
-	 * {@code tryCheckAll(subPackages, package.getName(), loader)}.
+	 * like {@link #tryCheckAll(boolean, String, ClassLoader)} with {@code tryCheckAll(subPackages, package.getName(), loader)}.
 	 * 
 	 * @param subPackages
 	 *            <code>true</code> if also classes in subPackages should be loaded
@@ -494,8 +457,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	 * @param subPackages
 	 *            <code>true</code> if also classes in subPackages should be loaded
 	 * @param pakage
-	 *            the name of the package (like {@link Package#getName()}) in which the classes should
-	 *            be searched
+	 *            the name of the package (like {@link Package#getName()}) in which the classes should be searched
 	 * @param loader
 	 *            the loader used to find/load classes
 	 * @see #tryCheckAll(boolean, String, ClassLoader)
@@ -505,8 +467,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * like {@link #tryGenerateBigChecker(boolean, String, ClassLoader, boolean)} with
-	 * {@code tryGetClassesForPackage(subPackages, package.getName(), loader, true)}.
+	 * like {@link #tryGenerateBigChecker(boolean, String, ClassLoader, boolean)} with {@code tryGetClassesForPackage(subPackages, package.getName(), loader, true)}.
 	 * 
 	 * @param subPackages
 	 *            <code>true</code> if also classes in subPackages should be loaded
@@ -521,14 +482,12 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	}
 	
 	/**
-	 * like {@link #tryGenerateBigChecker(String, boolean, ClassLoader, boolean)} with
-	 * {@code tryGetClassesForPackage(subPackages, package, loader, true)}.
+	 * like {@link #tryGenerateBigChecker(String, boolean, ClassLoader, boolean)} with {@code tryGetClassesForPackage(subPackages, package, loader, true)}.
 	 * 
 	 * @param subPackages
 	 *            <code>true</code> if also classes in subPackages should be loaded
 	 * @param pakage
-	 *            the name of the package (like {@link Package#getName()}) in which the classes should
-	 *            be searched
+	 *            the name of the package (like {@link Package#getName()}) in which the classes should be searched
 	 * @param loader
 	 *            the loader used to find/load classes
 	 * @see #tryGenerateBigChecker(boolean, String, ClassLoader, boolean)
@@ -539,21 +498,15 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	
 	/**
 	 * tries to check all classes from the given package.<br>
-	 * if {@code subPackages} is <code>true</code> this method also tries to check the classes in
-	 * supPackages.
+	 * if {@code subPackages} is <code>true</code> this method also tries to check the classes in supPackages.
 	 * <p>
-	 * a class is in a package, when the {@link Class#forName(String, boolean, ClassLoader)} method
-	 * finds the class, when the name starts with {@code pakage + "." + restName}.<br>
-	 * if {@code subPackages} is <code>false</code> {@code restName} is not allowed to contain a
-	 * {@code '.'}.
+	 * a class is in a package, when the {@link Class#forName(String, boolean, ClassLoader)} method finds the class, when the name starts with {@code pakage + "." + restName}.<br>
+	 * if {@code subPackages} is <code>false</code> {@code restName} is not allowed to contain a {@code '.'}.
 	 * <p>
-	 * if {@code bailError} is <code>true</code>, errors on loading/finding the classes will be
-	 * re-thrown.<br>
-	 * if {@code bailError} is <code>false</code>, errors on loading/finding the classes will be
-	 * suppressed.
+	 * if {@code bailError} is <code>true</code>, errors on loading/finding the classes will be re-thrown.<br>
+	 * if {@code bailError} is <code>false</code>, errors on loading/finding the classes will be suppressed.
 	 * <p>
-	 * this method checks only classes wich are annotated with {@link CheckClass} and are not
-	 * ({@link CheckClass#disabled()}).
+	 * this method checks only classes wich are annotated with {@link CheckClass} and are not ({@link CheckClass#disabled()}).
 	 * <p>
 	 * this method can not guarantee to find any classes in the given package or any sub-package!
 	 * 
@@ -564,8 +517,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	 * @param loader
 	 *            the loader used to find/load classes
 	 * @param bailError
-	 *            if errors on loading/finding classes should be re-thrown (<code>true</code>) or
-	 *            suppressed (<code>false</code>)
+	 *            if errors on loading/finding classes should be re-thrown (<code>true</code>) or suppressed (<code>false</code>)
 	 * @return the result of all executed checks
 	 */
 	public static BigChecker tryGenerateBigChecker(boolean subPackages, String pakage, ClassLoader loader, boolean bailError) {
@@ -576,23 +528,16 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	
 	/**
 	 * orig description:<br>
-	 * Scans all classloaders for the current thread for loaded jars, and then scans
-	 * each jar for the package name in question, listing all classes directly under
-	 * the package name in question. Assumes directory structure in jar file and class
-	 * package naming follow java conventions (i.e. com.example.test.MyTest would be in
-	 * /com/example/test/MyTest.class)
+	 * Scans all classloaders for the current thread for loaded jars, and then scans each jar for the package name in question, listing all classes directly under the package name in question. Assumes
+	 * directory structure in jar file and class package naming follow java conventions (i.e. com.example.test.MyTest would be in /com/example/test/MyTest.class)
 	 * <p>
-	 * in addition this method also scans for directories, where also is assumed, that the classes are
-	 * placed followed by the java conventions. (i.e. <code>com.example.test.MyTest</code> would be in
+	 * in addition this method also scans for directories, where also is assumed, that the classes are placed followed by the java conventions. (i.e. <code>com.example.test.MyTest</code> would be in
 	 * <code>directory/com/example/test/MyTest.class</code>)
 	 * <p>
-	 * this method also reads the jars Class-Path for other jars and directories. for the jars and
-	 * directories referred in the jars are scanned with the same rules as defined here.<br>
+	 * this method also reads the jars Class-Path for other jars and directories. for the jars and directories referred in the jars are scanned with the same rules as defined here.<br>
 	 * it is ensured that no jar/directory is scanned exactly one time.
 	 * <p>
-	 * if {@code bailError} is <code>true</code> all errors will be wrapped in a
-	 * {@link RuntimeException}
-	 * and then thrown.<br>
+	 * if {@code bailError} is <code>true</code> all errors will be wrapped in a {@link RuntimeException} and then thrown.<br>
 	 * a {@link RuntimeException} will also be thrown if something unexpected happens.<br>
 	 * 
 	 * @param packageName
@@ -602,8 +547,7 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 	 * @param loader
 	 *            the {@link ClassLoader} which should be used to find the URLs and to load classes
 	 * @param bailError
-	 *            if all {@link Exception} should be re-thrown wrapped in {@link RuntimeException} and
-	 *            if a {@link RuntimeException} should be thrown, when something is not as expected.
+	 *            if all {@link Exception} should be re-thrown wrapped in {@link RuntimeException} and if a {@link RuntimeException} should be thrown, when something is not as expected.
 	 * @see https://stackoverflow.com/questions/1156552/java-package-introspection
 	 * @see https://stackoverflow.com/a/1157352/18252455
 	 * @see https://creativecommons.org/licenses/by-sa/2.5/
