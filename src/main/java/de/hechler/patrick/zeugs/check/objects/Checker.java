@@ -3,6 +3,7 @@ package de.hechler.patrick.zeugs.check.objects;
 import java.lang.reflect.AccessibleObject;
 import java.lang.reflect.Array;
 import java.lang.reflect.Constructor;
+import java.lang.reflect.Executable;
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
@@ -13,6 +14,8 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import de.hechler.patrick.zeugs.check.anotations.Check;
@@ -22,19 +25,17 @@ import de.hechler.patrick.zeugs.check.anotations.MethodParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ResultParam;
 import de.hechler.patrick.zeugs.check.anotations.Start;
+import de.hechler.patrick.zeugs.check.interfaces.TriConsumer;
 
 /**
  * this class will be used to execute all checks.<br>
- * the preferred was to instantiate a {@link Checker} is by using the
- * {@link #generateChecker(Class)} method.<br>
- * if the {@link Checker} is only needed for the {@link CheckResult} the {@link #check(Class)}
- * method should be used.
+ * the preferred was to instantiate a {@link Checker} is by using the {@link #generateChecker(Class)} method.<br>
+ * if the {@link Checker} is only needed for the {@link CheckResult} the {@link #check(Class)} method should be used.
  * <p>
  * to run multiple checks the {@link BigChecker} class is recommended.
  * <p>
  * even if the checker is not a final class, all methods used for checking are marked as final.<br>
- * so it can does not affect the check process if a checker is exactly of the {@link Check} class or
- * of a sub-class.
+ * so it can does not affect the check process if a checker is exactly of the {@link Check} class or of a sub-class.
  * 
  * @author Patrick
  */
@@ -42,6 +43,52 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	static {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
+	}
+	
+	private static final Map <Module, Consumer <String>> moduleExporters = new HashMap <>();
+	
+	public static void registerExporter(TriConsumer <Module, String, Module> exporter) {
+		if (exporter == null) {
+			throw new NullPointerException("exporter is null");
+		}
+		registerExporter(exporter.getClass().getModule(), pkg -> exporter.accept(exporter.getClass().getModule(), pkg, Checker.class.getModule()));
+	}
+	
+	public static void registerExporter(BiConsumer <String, Module> exporter) {
+		if (exporter == null) {
+			throw new NullPointerException("exporter is null");
+		}
+		registerExporter(exporter.getClass().getModule(), pkg -> exporter.accept(pkg, Checker.class.getModule()));
+	}
+	
+	public static void registerExporter(Consumer <String> exporter) {
+		if (exporter == null) {
+			throw new NullPointerException("exporter is null");
+		}
+		synchronized (moduleExporters) {
+			moduleExporters.merge(exporter.getClass().getModule(), exporter, (a, b) -> {
+				System.err.println("[WARN]: register multiple exporters for the same module (" + a.getClass().getModule() + ")");
+				return pkg -> {
+					a.accept(pkg);
+					b.accept(pkg);
+				};
+			});
+		}
+	}
+	
+	public static void registerExporter(Module module, Consumer <String> exporter) {
+		if (exporter == null) {
+			throw new NullPointerException("exporter is null");
+		}
+		synchronized (moduleExporters) {
+			moduleExporters.merge(module, exporter, (a, b) -> {
+				System.err.println("[WARN]: register multiple exporters for the same module (" + a.getClass().getModule() + ")");
+				return pkg -> {
+					a.accept(pkg);
+					b.accept(pkg);
+				};
+			});
+		}
 	}
 	
 	/**
@@ -56,24 +103,22 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	/**
 	 * the {@link List} saving all methods which should be executed before any checks are executed
 	 */
-	private List <Method> init = null;
+	private List <Method> init     = null;
 	/**
-	 * the {@link List} saving all methods which should be executed every time before the execution of a
-	 * check starts
+	 * the {@link List} saving all methods which should be executed every time before the execution of a check starts
 	 */
-	private List <Method> start = null;
+	private List <Method> start    = null;
 	/**
 	 * 
 	 */
-	private List <Method> end = null;
+	private List <Method> end      = null;
 	private List <Method> finalize = null;
-	private List <Method> check = null;
+	private List <Method> check    = null;
 	
 	/**
 	 * saves the result of this checker or <code>null</code> if the checks has not been executed.<br>
 	 * to execute the checks the {@link #run()} method is used.<br>
-	 * if {@link #get()} is called before the checks has been executed, the {@link #run()} method
-	 * will be automatically be executed.
+	 * if {@link #get()} is called before the checks has been executed, the {@link #run()} method will be automatically be executed.
 	 * 
 	 * @see #get()
 	 * @see #run()
@@ -84,8 +129,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	/**
 	 * creates a new {@link Checker}.<br>
-	 * this {@link Checker} will use itself to call methods: {@link Method#invoke(Object, Object...)
-	 * method.invoke(this, params);}
+	 * this {@link Checker} will use itself to call methods: {@link Method#invoke(Object, Object...) method.invoke(this, params);}
 	 */
 	public Checker() {
 		instance = this;
@@ -99,26 +143,21 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * if {@code instance} is <code>null</code> only static methods can be called.<br>
 	 * (static methods can always be called)
 	 * <p>
-	 * if the {@code instance} is <code>null</code>, the {@link #load(Class)} method has to be called
-	 * before the {@link #run()} (or {@link #get()}) method gets invoked.<br>
-	 * if they are invoked before the {@link #load(Class)} method was called and the {@link #instance}
-	 * is <code>null</code> they will throw an {@link IllegalStateException}.
+	 * if the {@code instance} is <code>null</code>, the {@link #load(Class)} method has to be called before the {@link #run()} (or {@link #get()}) method gets invoked.<br>
+	 * if they are invoked before the {@link #load(Class)} method was called and the {@link #instance} is <code>null</code> they will throw an {@link IllegalStateException}.
 	 * 
 	 * @param instance
 	 *            the {@code instance} used by this {@link Checker}
 	 * @see {@link Method#invoke(Object, Object...) method.invoke(instance, params);}
 	 */
 	public Checker(Object instance) {
-		this.instance = instance;
+		this.instance = instance == null ? Checker.class : instance;
 	}
 	
 	/**
-	 * returns <code>true</code> if the checks has already been executed and <code>false</code> if the
-	 * checker still needs to execute the checks to generate the {@link #result} of this checker.
+	 * returns <code>true</code> if the checks has already been executed and <code>false</code> if the checker still needs to execute the checks to generate the {@link #result} of this checker.
 	 * 
-	 * @return
-	 *             returns <code>true</code> if the checks has already been executed and
-	 *             <code>false</code> if not
+	 * @return returns <code>true</code> if the checks has already been executed and <code>false</code> if not
 	 */
 	public final boolean checkedAlready() {
 		return result == null;
@@ -140,35 +179,25 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	}
 	
 	/**
-	 * executes all startup methods (methods annotated with {@link Start}, where
-	 * {@link Start#onlyOnce()} is <code>true</code>)<br>
+	 * executes all startup methods (methods annotated with {@link Start}, where {@link Start#onlyOnce()} is <code>true</code>)<br>
 	 * then all checks are executed.<br>
-	 * before each check method all {@link Start} methods with {@link Start#onlyOnce()} set to
-	 * <code>false</code> are executed.<br>
+	 * before each check method all {@link Start} methods with {@link Start#onlyOnce()} set to <code>false</code> are executed.<br>
 	 * then the check current is executed (some method annotated with {@link Check}).<br>
-	 * after the check all {@link End} methods with {@link End#onlyOnce()} set to <code>false</code> are
-	 * executed.<br>
-	 * after the execution of all {@link Check} methods the {@link End} methods annotated with
-	 * {@link End#onlyOnce()} set to <code>true</code> are executed.
+	 * after the check all {@link End} methods with {@link End#onlyOnce()} set to <code>false</code> are executed.<br>
+	 * after the execution of all {@link Check} methods the {@link End} methods annotated with {@link End#onlyOnce()} set to <code>true</code> are executed.
 	 * <p>
 	 * if this method is run multiple times the checks are executed multiple times.<br>
 	 * to check if the checks already has been executed use {@link #checkedAlready()}.<br>
-	 * this method is automatically invoked, when {@link #get()} is invoked and the checks have not
-	 * been executed.
+	 * this method is automatically invoked, when {@link #get()} is invoked and the checks have not been executed.
 	 * <p>
-	 * this method will not create new {@link Thread} objects, so all checks/starts/ends are executed
-	 * with the {@link Thread} executing this method.<br>
-	 * this also means the checked class can use its member variables without caring about the other
-	 * checks.
+	 * this method will not create new {@link Thread} objects, so all checks/starts/ends are executed with the {@link Thread} executing this method.<br>
+	 * this also means the checked class can use its member variables without caring about the other checks.
 	 * <p>
-	 * this method throws a IllegalStateException if this checker has not been loaded
-	 * ({@link #load(Class)}) and was created with a null {@link #instance} (using the
-	 * {@link #Checker(Object)}
+	 * this method throws a IllegalStateException if this checker has not been loaded ({@link #load(Class)}) and was created with a null {@link #instance} (using the {@link #Checker(Object)}
 	 * 
 	 * @throws IllegalStateException
-	 *             if this checker has not been loaded ({@link #load(Class)}) and was created with a
-	 *             <code>null</code> {@link #instance} (using the {@link #Checker(Object)} constructor
-	 *             with a <code>null</code> argument)
+	 *             if this checker has not been loaded ({@link #load(Class)}) and was created with a <code>null</code> {@link #instance} (using the {@link #Checker(Object)} constructor with a
+	 *             <code>null</code> argument)
 	 */
 	@Override
 	public final void run() throws IllegalStateException {
@@ -305,13 +334,9 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	/**
 	 * prepares this checker to execute the checks from this class.
 	 * <p>
-	 * if this checker has been instantiated with the {@link #Checker(Object)} and a <code>null</code>
-	 * argument this method has to be executed explicit.<br>
-	 * if this {@link Checker} has been instantiated with the {@link #generateChecker(Class)} this
-	 * method is already invoked if the checker has a <code>null</code>
-	 * {@link #instance}.<br>
-	 * if this checker has a non <code>null</code> {@link #instance} and this method has not been
-	 * called, this method will automatically been called, when the {@link #run()} method is invoked.
+	 * if this checker has been instantiated with the {@link #Checker(Object)} and a <code>null</code> argument this method has to be executed explicit.<br>
+	 * if this {@link Checker} has been instantiated with the {@link #generateChecker(Class)} this method is already invoked if the checker has a <code>null</code> {@link #instance}.<br>
+	 * if this checker has a non <code>null</code> {@link #instance} and this method has not been called, this method will automatically been called, when the {@link #run()} method is invoked.
 	 * <p>
 	 * this method will also enable the assertions for the given class.<br>
 	 * if the given class is a nested class the assertions will be enabled for the outermost class.
@@ -380,8 +405,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	}
 	
 	/**
-	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not
-	 * {@code extend} {@link Checker}<br>
+	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
 	 * the generated {@link Checker} will be used to return the {@link CheckResult}.
 	 * 
 	 * @param clas
@@ -407,8 +431,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	}
 	
 	/**
-	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not
-	 * {@code extend} {@link Checker}<br>
+	 * this will generate a {@link Checker} of {@code clas}, even if {@code clas} does not {@code extend} {@link Checker}<br>
 	 * 
 	 * @param clas
 	 *            the {@link Class} to be checked
@@ -416,6 +439,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 */
 	public static Checker generateChecker(final Class <?> clas) {
 		try {
+			exp(clas);
 			Object instance = createInstance(clas);
 			if (instance instanceof Checker) {
 				return (Checker) instance;
@@ -426,6 +450,10 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 			}
 		} catch (NoSuchMethodException | SecurityException | InstantiationException | IllegalAccessException | IllegalArgumentException | InvocationTargetException ignore) {
 			// make with 'static' checker (error on instance methods)
+			boolean warn = false;
+			if (warn) {
+				System.err.println("can only use static checks");
+			}
 		}
 		Checker c = new Checker(null);
 		c.load(clas);
@@ -433,7 +461,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	}
 	
 	private static <T> T createInstance(final Class <T> clas)
-			throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
+		throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException, NoSuchMethodException {
 		Object firstParam = null;
 		if (clas.isMemberClass()) {
 			if ( !Modifier.isStatic(clas.getModifiers())) {
@@ -450,7 +478,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		}
 		for (Constructor <?> c : cs) {
 			Start s = c.getAnnotation(Start.class);
-			if (s != null && s.disabled()) continue;
+			if (s != null /* && s.disabled() */) continue;
 			return create(clas, c, firstParam);
 		}
 		Constructor <?> c = cs[0];
@@ -458,7 +486,8 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	}
 	
 	private static <T> T create(final Class <T> clas, Constructor <?> c, Object firstParam)
-			throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException {
+		throws InternalError, InstantiationException, IllegalAccessException, InvocationTargetException {
+		exp(clas);
 		Parameter[] params = c.getParameters();
 		Object[] ps = new Object[params.length];
 		int i = 0;
@@ -474,13 +503,36 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		return clas.cast(instance);
 	}
 	
+	private static void exp(Class <?> clas) {
+		synchronized (moduleExporters) {
+			Consumer <String> register = moduleExporters.get(clas.getModule());
+			if (register != null) {
+				register.accept(clas.getPackageName());
+			}
+		}
+	}
+	
 	/**
 	 * sets the given accessible object accessible.
 	 * 
 	 * @param ao
 	 *            the accessible object to set accessible
 	 */
+	@SuppressWarnings("removal")
 	public static void setAccessible(AccessibleObject ao) {
+		if (ao instanceof Field) {
+			Field f = (Field) ao;
+			int mods = f.getModifiers();
+			if (Modifier.isPublic(mods) && !Modifier.isFinal(mods)) {
+				return;
+			}
+		} else if (ao instanceof Executable) {
+			Executable e = (Executable) ao;
+			int mods = e.getModifiers();
+			if (Modifier.isPublic(mods) && !Modifier.isFinal(mods)) {
+				return;
+			}
+		}
 		try {
 			ao.setAccessible(true);
 		} catch (Exception e) {
@@ -514,14 +566,12 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	/**
 	 * this method uses the sun.misc.Unsafe class to get the value of the given field.<br>
-	 * if the field contains a primitive type, the fields value will be wrapped to the given non
-	 * primitive type
+	 * if the field contains a primitive type, the fields value will be wrapped to the given non primitive type
 	 * 
 	 * @param field
 	 *            the field which holds the value to receive
 	 * @param instance
-	 *            the instance on wich should be worked if the field is static this value will be
-	 *            ignored
+	 *            the instance on wich should be worked if the field is static this value will be ignored
 	 * @return the value of the field on the given instance
 	 * @throws NoSuchFieldException
 	 *             if the unsafe could not be received
@@ -532,7 +582,6 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * @throws IllegalAccessException
 	 *             if the unsafe could not be received
 	 */
-	@SuppressWarnings("restriction")
 	public static Object unsafeGet(Field field, Object instance) throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException {
 		sun.misc.Unsafe unsafe = getUnsafe();
 		long off;
@@ -559,8 +608,7 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	/**
 	 * this method uses the sun.misc.Unsafe class to put the value of the given field.<br>
-	 * if the field contains a primitive type, the fields value will be wrapped to the given non
-	 * primitive type
+	 * if the field contains a primitive type, the fields value will be wrapped to the given non primitive type
 	 * 
 	 * @param field
 	 *            the given field
@@ -581,9 +629,8 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	 * @throws NullPointerException
 	 *             if the field is from a primitive type, but the value is <code>null</code>
 	 */
-	@SuppressWarnings("restriction")
 	public static void unsafePut(Field field, Object instance, Object value)
-			throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, ClassCastException, NullPointerException {
+		throws NoSuchFieldException, SecurityException, IllegalArgumentException, IllegalAccessException, ClassCastException, NullPointerException {
 		sun.misc.Unsafe unsafe = getUnsafe();
 		long off;
 		if (Modifier.isStatic(field.getModifiers())) {
@@ -607,7 +654,6 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 		}
 	}
 	
-	@SuppressWarnings("restriction")
 	private static sun.misc.Unsafe getUnsafe() throws IllegalArgumentException, IllegalAccessException, NoSuchFieldException, SecurityException {
 		System.out.println("get unsafe");
 		Field theUnsafe = sun.misc.Unsafe.class.getDeclaredField("theUnsafe");

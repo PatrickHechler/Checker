@@ -13,7 +13,7 @@ public class Test {
 	
 	public static void main(String[] args) {
 		try {
-			System.out.println("[Test]: start all checks");
+			System.out.println("[Test]: start all checks (module=" + Test.class.getModule() + ")");
 			BigCheckResult res = BigChecker.tryGenerateBigChecker(true, Test.class.getPackage().getName(), Test.class.getClassLoader(), true).get();
 			assertGreather(res.checkedResultCount(), 0);
 			System.out.println("[Test]: finished all checks");

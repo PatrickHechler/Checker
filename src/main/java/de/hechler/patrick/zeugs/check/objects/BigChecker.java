@@ -755,10 +755,13 @@ public class BigChecker implements Runnable, Supplier <BigCheckResult>, TriConsu
 		packagePath = "/" + packagePath;
 		String urlStr = res.toString();
 		if ( !urlStr.endsWith(packagePath)) {
-			if (bailError) {
-				throw new RuntimeException("the url string does not end with the packagepath! packagePath='" + packagePath + "' urlStr='" + urlStr + "'");
-			} else {
-				return null;
+			packagePath += '/';
+			if ( !urlStr.endsWith(packagePath)) {
+				if (bailError) {
+					throw new RuntimeException("the url string does not end with the packagepath! packagePath='" + packagePath + "' urlStr='" + urlStr + "'");
+				} else {
+					return null;
+				}
 			}
 		}
 		urlStr = urlStr.substring(0, urlStr.length() - packagePath.length());
