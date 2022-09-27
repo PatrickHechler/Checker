@@ -43,6 +43,11 @@ public class Checker implements Runnable, Supplier <CheckResult> {
 	
 	static {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
+		System.out.println("CHecker-module: " + Checker.class.getModule());
+	}
+	
+	public static void main(String[] args) {
+		
 	}
 	
 	private static final Map <Module, Consumer <String>> moduleExporters = new HashMap <>();
