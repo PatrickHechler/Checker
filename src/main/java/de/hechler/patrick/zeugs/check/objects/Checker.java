@@ -345,7 +345,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 					ps[i] = getSingleParam(invoker, null, willRun, met, param, params[i], cls);
 				}
 			}
-			Result r = run(met, invoker, notRun, ps);
+			Result r = run(met, invoker, met, ps);
 			if (r.badResult()) { throw new AssertionError("could not get Parameter: " + r.getErr().getMessage(), r.getErr()); }
 			Object   result            = r.getResult();
 			Class<?> resultType        = result == null ? paramType : result.getClass();
@@ -455,14 +455,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			Start s = m.getAnnotation(Start.class);
 			if (s != null && !s.disabled()) {
 				if (s.onlyOnce()) {
-					if (m.getParameterCount() == 0) {
-						this.init.add(() -> run(m, instance, null, EMPTY_ARR));
-					} else {
-						for (Iterator<Object[]> iter = generateBigIter(m, null, null, null); iter.hasNext();) {
-							Object[] objs = iter.next();
-							this.init.add(() -> run(m, instance, null, objs));
-						}
-					}
+					this.init.add(() -> executeMethod(null, null, m));
 				} else {
 					this.start.add(m);
 				}
@@ -470,60 +463,64 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			End e = m.getAnnotation(End.class);
 			if (e != null && !e.disabled()) {
 				if (e.onlyOnce()) {
-					if (m.getParameterCount() == 0) {
-						this.finalize.add(sup -> run(m, instance, null, EMPTY_ARR));
-					} else {
-						this.finalize.add(sup -> {
-							for (Iterator<Object[]> iter = generateBigIter(m, sup, null, null); iter.hasNext();) {
-								Object[] objs = iter.next();
-								run(m, instance, null, objs);
-							}
-						});
-					}
+					this.finalize.add(sup -> executeMethod(null, sup, m));
 				} else {
 					this.end.add(m);
 				}
 			}
 			Check c = m.getAnnotation(Check.class);
 			if (c != null && !c.disabled()) {
-				if (m.getParameterCount() == 0) {
-					this.check.add(resultsMap -> { // execute the check and add the result to the map
-						Result r = run(m, instance, null, EMPTY_ARR);
+				this.check.add(resultsMap -> {
+					if (m.getParameterCount() == 0) {
+						executeStart(m);
+						Result r = run(m, instance, m, EMPTY_ARR);
+						executeEnd(m, r);
 						resultsMap.put(new TwoValues<>(m, EMPTY_ARR), r);
-					});
-				} else {
-					for (Iterator<Object[]> iter = generateBigIter(m, null, null, null); iter.hasNext();) {
-						Object[] objs = iter.next();
-						this.check.add(a -> {
-							for (Method sm : this.start) {
-								if (m.getParameterCount() == 0) {
-									Result sr = run(m, instance, null, EMPTY_ARR);
-									if (sr.badResult()) { throw new AssertionError(sr); }
-								} else {
-									for (Iterator<Object[]> startIter = generateBigIter(sm, null, m, null); startIter.hasNext();) {
-										Object[] startObjs = startIter.next();
-										Result   sr        = run(sm, instance, null, startObjs);
-										if (sr.badResult()) { throw new AssertionError(sr); }
-									}
-								}
-							}
-							Result r = run(m, instance, null, objs);
-							for (Method em : this.end) {
-								if (m.getParameterCount() == 0) {
-									Result er = run(m, instance, null, EMPTY_ARR);
-									if (er.badResult()) { throw new AssertionError(er); }
-								} else {
-									for (Iterator<Object[]> endIter = generateBigIter(em, () -> r, m, null); endIter.hasNext();) {
-										Object[] endObjs = endIter.next();
-										Result   er      = run(em, instance, null, endObjs);
-										if (er.badResult()) { throw new AssertionError(er); }
-									}
-								}
-							}
-							a.put(new TwoValues<>(m, objs), r);
-						});
+					} else {
+						for (Iterator<Object[]> iter = generateBigIter(m, null, null, null); iter.hasNext();) {
+							executeStart(m);
+							Object[] objs = iter.next();
+							Result   r    = run(m, instance, null, objs);
+							executeEnd(m, r);
+							resultsMap.put(new TwoValues<>(m, objs), r);
+						}
 					}
+				});
+			}
+		}
+	}
+	
+	private void executeEnd(Method m, Result r) throws AssertionError {
+		for (Method em : this.end) {
+			executeMethod(m, () -> r, em);
+		}
+	}
+	
+	private void executeStart(Method m) throws AssertionError {
+		for (Method sm : this.start) {
+			executeMethod(m, null, sm);
+			if (m.getParameterCount() == 0) {
+				Result sr = run(m, instance, null, EMPTY_ARR);
+				if (sr.badResult()) { throw new AssertionError(sr); }
+			} else {
+				for (Iterator<Object[]> startIter = generateBigIter(sm, null, m, null); startIter.hasNext();) {
+					Object[] startObjs = startIter.next();
+					Result   sr        = run(sm, instance, null, startObjs);
+					if (sr.badResult()) { throw new AssertionError(sr); }
 				}
+			}
+		}
+	}
+	
+	private void executeMethod(Method m, Supplier<?> r, Method exeMet) throws AssertionError {
+		if (exeMet.getParameterCount() == 0) {
+			Result er = run(exeMet, instance, m == null ? exeMet : m, EMPTY_ARR);
+			if (er.badResult()) { throw new AssertionError(er); }
+		} else {
+			for (Iterator<Object[]> endIter = generateBigIter(exeMet, r, m, null); endIter.hasNext();) {
+				Object[] endObjs = endIter.next();
+				Result   er      = run(exeMet, instance, m == null ? exeMet : m, endObjs);
+				if (er.badResult()) { throw new AssertionError(er); }
 			}
 		}
 	}
