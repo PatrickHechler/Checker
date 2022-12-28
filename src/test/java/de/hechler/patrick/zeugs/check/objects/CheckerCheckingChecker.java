@@ -10,20 +10,18 @@ import java.lang.reflect.Method;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.MethodParam;
+import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.Start;
 
 @CheckClass
+@SuppressWarnings("static-method")
 public class CheckerCheckingChecker extends Checker {
 	
 	@Start
-	private void start(@MethodParam Method met) {
-		System.out.println(met.getName() + " start");
-	}
+	private void start(@MethodParam Method met) { LogHandler.LOG.finer(() -> met.getName() + " start"); }
 	
 	@Start
-	private void end(@MethodParam Method met) {
-		System.out.println(met.getName() + " finish");
-	}
+	private void end(@MethodParam Method met) { LogHandler.LOG.finer(() -> met.getName() + " finish"); }
 	
 	@Check
 	public void resultChecker() {
@@ -59,19 +57,18 @@ public class CheckerCheckingChecker extends Checker {
 	public class SubChecker1 extends Checker {
 		
 		@Check
-		public void empty() {
-		}
+		public void empty() {}
 		
 		@Check
 		public void good() {
 			assertEquals(0, 0);
-			assertEquals( -1l, -1l);
+			assertEquals(-1l, -1l);
 		}
 		
 		@Check
 		public void bad() {
 			assertEquals(0, 0);
-			assertEquals( -2l, -1l);
+			assertEquals(-2l, -1l);
 		}
 		
 	}
@@ -79,19 +76,18 @@ public class CheckerCheckingChecker extends Checker {
 	public class SubChecker2 extends Checker {
 		
 		@Check
-		public void empty() {
-		}
+		public void empty() {}
 		
 		@Check
 		public void good() {
 			assertEquals(0, 0);
-			assertEquals( -1l, -1l);
+			assertEquals(-1l, -1l);
 		}
 		
 		@Check
 		public void goodBad() {
 			assertEquals(0, 0);
-			assertNotEquals( -2l, -1l);
+			assertNotEquals(-2l, -1l);
 		}
 		
 	}
@@ -101,13 +97,13 @@ public class CheckerCheckingChecker extends Checker {
 		@Check
 		public void baadGood() {
 			assertEquals(new Object(), new Object());
-			assertEquals( -1l, -1l);
+			assertEquals(-1l, -1l);
 		}
 		
 		@Check
 		public void bad() {
 			assertEquals(0, 0);
-			assertEquals( -2l, -1l);
+			assertEquals(-2l, -1l);
 		}
 		
 	}
@@ -115,32 +111,31 @@ public class CheckerCheckingChecker extends Checker {
 	public class SubChecker4 extends Checker {
 		
 		@Check(disabled = true)
-		public void empty() {
-		}
+		public void empty() {}
 		
 		@Check(disabled = true)
 		public void good() {
 			assertEquals(0, 0);
-			assertEquals( -1l, -1l);
+			assertEquals(-1l, -1l);
 		}
 		
 		@Check(disabled = true)
 		public void bad() {
 			assertEquals(0, 0);
-			assertEquals( -2l, -1l);
+			assertEquals(-2l, -1l);
 		}
 		
 		@Check(disabled = true)
 		public void goodBad() {
 			assertEquals(0, 0);
-			assertNotEquals( -2l, -1l);
+			assertNotEquals(-2l, -1l);
 		}
 		
 	}
 	
 	@Check
 	public void checkerCreateCheck() {
-		Checker c = new Checker(this.new InnerChecker());
+		Checker     c   = new Checker(this.new InnerChecker());
 		CheckResult res = c.get();
 		assertTrue(res.wentExpected());
 		res = Checker.check(SubFormerWrongChecker.class);
@@ -151,20 +146,20 @@ public class CheckerCheckingChecker extends Checker {
 	public static class SubFormerWrongChecker extends Checker {
 		
 		@Check
-		private void name(Object param) {
-		}
+		private void name(@ParamCreater(method = "voidValue") Object param) {}
+		
+		@SuppressWarnings("unused")
+		private void voidValue() {}
 		
 	}
 	
 	private class InnerChecker {
 		
 		@Start
-		private InnerChecker() {
-		}
+		private InnerChecker() {}
 		
 		@Check
-		private void name() {
-		}
+		private void name() {}
 		
 	}
 	

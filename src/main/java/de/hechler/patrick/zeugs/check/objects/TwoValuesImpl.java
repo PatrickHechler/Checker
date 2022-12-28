@@ -1,89 +1,85 @@
 package de.hechler.patrick.zeugs.check.objects;
 
-import de.hechler.patrick.zeugs.check.interfaces.TwoValues;
+import java.util.Objects;
+
+import de.hechler.patrick.zeugs.check.interfaces.TwoVals;
 
 /**
- * a simple implementation of the {@link TwoValues} interface.<br>
+ * a simple implementation of the {@link TwoVals} interface.<br>
  * this implementation allows public access to the two values.<br>
- * modifications with the {@link #setValueA(Object)} and {@link #setValueB(Object)}
+ * modifications with the {@link #valA(Object)} and {@link #valB(Object)}
  * methods are allowed.
  * 
  * @author Patrick
+ * 
  * @param <A>
  *            the type of the first value
  * @param <B>
  *            the type of the second value
  */
-public class TwoValuesImpl <A, B> implements TwoValues <A, B>, Cloneable {
+public class TwoValuesImpl<A, B> implements TwoVals<A, B>, Cloneable {
 	
 	/**
-	 * the first value
+	 * the A value
 	 */
-	public A valueA;
+	public A valA;
 	/**
-	 * the second value
+	 * the B value
 	 */
-	public B valueB;
+	public B valB;
 	
+	/**
+	 * creates a new {@link TwoValuesImpl} with the given two initial values
+	 * 
+	 * @param valueA the initial A value
+	 * @param valueB the initial B value
+	 */
 	public TwoValuesImpl(A valueA, B valueB) {
-		this.valueA = valueA;
-		this.valueB = valueB;
+		this.valA = valueA;
+		this.valB = valueB;
 	}
 	
 	@Override
-	public A getValueA() { return valueA; }
+	public A valA() { return valA; }
 	
 	@Override
-	public B getValueB() { return valueB; }
+	public B valB() { return valB; }
 	
 	@Override
-	public void setValueA(A valueA) { this.valueA = valueA; }
+	public void valA(A valueA) { this.valA = valueA; }
 	
 	@Override
-	public void setValueB(B valueB) { this.valueB = valueB; }
+	public void valB(B valueB) { this.valB = valueB; }
 	
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ( (valueA == null) ? 0 : valueA.hashCode());
-		result = prime * result + ( (valueB == null) ? 0 : valueB.hashCode());
-		return result;
-	}
+	public int hashCode() { return TwoVals.hashCode(valA) ^ TwoVals.hashCode(valB); }
 	
 	@Override
 	public boolean equals(Object obj) {
-		if (this == obj) return true;
+		if (obj == this) return true;
 		if (obj == null) return false;
-		if (getClass() != obj.getClass()) return false;
-		TwoValuesImpl <?, ?> other = (TwoValuesImpl <?, ?>) obj;
-		if (valueA == null) {
-			if (other.valueA != null) return false;
-		} else if ( !valueA.equals(other.valueA)) return false;
-		if (valueB == null) {
-			if (other.valueB != null) return false;
-		} else if ( !valueB.equals(other.valueB)) return false;
-		return true;
+		if (!(obj instanceof TwoVals<?, ?> ce)) return false;
+		return Objects.deepEquals(valA, ce.valA()) && Objects.deepEquals(valB, ce.valB());
 	}
 	
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();
 		builder.append("TwoValues [valueA=");
-		builder.append(valueA);
+		builder.append(valA);
 		builder.append(", valueB=");
-		builder.append(valueB);
+		builder.append(valB);
 		builder.append("]");
 		return builder.toString();
 	}
 	
 	@Override
 	@SuppressWarnings("unchecked")
-	protected TwoValuesImpl <A, B> clone() {
+	protected TwoValuesImpl<A, B> clone() {
 		try {
-			return (TwoValuesImpl <A, B>) super.clone();
+			return (TwoValuesImpl<A, B>) super.clone();
 		} catch (CloneNotSupportedException e) {
-			return new TwoValuesImpl <A, B>(valueA, valueB);
+			return new TwoValuesImpl<>(valA, valB);
 		}
 	}
 	

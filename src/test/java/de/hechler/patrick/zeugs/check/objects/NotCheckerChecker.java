@@ -17,43 +17,29 @@ import de.hechler.patrick.zeugs.check.exceptions.CheckerFailException;
 public class NotCheckerChecker {
 	
 	@Start(onlyOnce = true)
-	public static void start2() {
-		System.out.println("init");
-	}
+	public static void start2() { LogHandler.LOG.finer(() -> "init"); }
 	
 	@Start(onlyOnce = true)
-	public static void start3() {
-		System.out.println("other init");
-	}
+	public static void start3() { LogHandler.LOG.finer(() -> "other init"); }
 	
 	@Start
-	public static void start1() {
-		System.out.println("  check starts");
-	}
+	public static void start1() { LogHandler.LOG.finer(() -> "  check starts"); }
 	
 	@Check
-	public static void check1() {
-		System.out.println("    hello world");
-	}
+	public static void check1() { LogHandler.LOG.finer(() -> "    hello world"); }
 	
 	@Check(disabled = true)
-	public static void check2() {
-		System.out.println("not called");
-	}
+	public static void check2() { LogHandler.LOG.finer(() -> "not called"); }
 	
 	@Check(disabled = false)
-	public static void check3() {
-		System.out.println("    check3");
-	}
+	public static void check3() { LogHandler.LOG.finer(() -> "    check3"); }
 	
 	@Check
-	public static void check4() {
-		System.out.println("    check4");
-	}
+	public static void check4() { LogHandler.LOG.finer(() -> "    check4"); }
 	
 	@Check
 	public static void checkAssertEquals() {
-		System.out.println("    checkAssertEquals");
+		LogHandler.LOG.finer(() -> "    checkAssertEquals");
 		assertEquals((byte) 5, (byte) 5);
 		assertEquals((short) 5, (short) 5);
 		assertEquals(5, 5);
@@ -70,11 +56,11 @@ public class NotCheckerChecker {
 	
 	@Check
 	public static void checkAssertArrayEquals() {
-		System.out.println("    checkAssertArrayEquals");
-		byte[] bytesA = new byte[] {4, 5, 89 };
-		byte[] bytesB = new byte[] {4, 5, 89 };
-		byte[] bytesC = new byte[] {4, 89 };
-		byte[] bytesD = new byte[] {4, 89 };
+		LogHandler.LOG.finer(() -> "    checkAssertArrayEquals");
+		byte[] bytesA = new byte[] { 4, 5, 89 };
+		byte[] bytesB = new byte[] { 4, 5, 89 };
+		byte[] bytesC = new byte[] { 4, 89 };
+		byte[] bytesD = new byte[] { 4, 89 };
 		assertArrayEquals(bytesA, bytesA);
 		assertArrayEquals(bytesB, bytesB);
 		assertArrayEquals(bytesC, bytesC);
@@ -85,10 +71,10 @@ public class NotCheckerChecker {
 		assertThrowsAny(() -> assertArrayEquals(bytesA, bytesC));
 		assertThrowsAny(() -> assertArrayEquals(bytesB, bytesC));
 		assertThrowsAny(() -> assertArrayEquals(bytesB, bytesD));
-		short[] shortsA = new short[] {4, 5, 89 };
-		short[] shortsB = new short[] {4, 5, 89 };
-		short[] shortsC = new short[] {4, 89 };
-		short[] shortsD = new short[] {4, 89 };
+		short[] shortsA = new short[] { 4, 5, 89 };
+		short[] shortsB = new short[] { 4, 5, 89 };
+		short[] shortsC = new short[] { 4, 89 };
+		short[] shortsD = new short[] { 4, 89 };
 		assertArrayEquals(shortsA, shortsA);
 		assertArrayEquals(shortsB, shortsB);
 		assertArrayEquals(shortsC, shortsC);
@@ -99,10 +85,10 @@ public class NotCheckerChecker {
 		assertThrowsAny(() -> assertArrayEquals(shortsA, shortsC));
 		assertThrowsAny(() -> assertArrayEquals(shortsB, shortsC));
 		assertThrowsAny(() -> assertArrayEquals(shortsB, shortsD));
-		int[] intsA = new int[] {4, 5, 89 };
-		int[] intsB = new int[] {4, 5, 89 };
-		int[] intsC = new int[] {4, 89 };
-		int[] intsD = new int[] {4, 89 };
+		int[] intsA = new int[] { 4, 5, 89 };
+		int[] intsB = new int[] { 4, 5, 89 };
+		int[] intsC = new int[] { 4, 89 };
+		int[] intsD = new int[] { 4, 89 };
 		assertArrayEquals(intsA, intsA);
 		assertArrayEquals(intsB, intsB);
 		assertArrayEquals(intsC, intsC);
@@ -113,10 +99,10 @@ public class NotCheckerChecker {
 		assertThrowsAny(() -> assertArrayEquals(intsA, intsC));
 		assertThrowsAny(() -> assertArrayEquals(intsB, intsC));
 		assertThrowsAny(() -> assertArrayEquals(intsB, intsD));
-		long[] longsA = new long[] {4, 5, 89 };
-		long[] longsB = new long[] {4, 5, 89 };
-		long[] longsC = new long[] {4, 89 };
-		long[] longsD = new long[] {4, 89 };
+		long[] longsA = new long[] { 4, 5, 89 };
+		long[] longsB = new long[] { 4, 5, 89 };
+		long[] longsC = new long[] { 4, 89 };
+		long[] longsD = new long[] { 4, 89 };
 		assertArrayEquals(longsA, longsA);
 		assertArrayEquals(longsB, longsB);
 		assertArrayEquals(longsC, longsC);
@@ -127,10 +113,10 @@ public class NotCheckerChecker {
 		assertThrowsAny(() -> assertArrayEquals(longsA, longsC));
 		assertThrowsAny(() -> assertArrayEquals(longsB, longsC));
 		assertThrowsAny(() -> assertArrayEquals(longsB, longsD));
-		float[] floatsA = new float[] {4, 5, 89 };
-		float[] floatsaB = new float[] {4, 5, 89 };
-		float[] floatsC = new float[] {4, 89 };
-		float[] floatsD = new float[] {4, 89 };
+		float[] floatsA  = new float[] { 4, 5, 89 };
+		float[] floatsaB = new float[] { 4, 5, 89 };
+		float[] floatsC  = new float[] { 4, 89 };
+		float[] floatsD  = new float[] { 4, 89 };
 		assertArrayEquals(floatsA, floatsA);
 		assertArrayEquals(floatsaB, floatsaB);
 		assertArrayEquals(floatsC, floatsC);
@@ -141,10 +127,10 @@ public class NotCheckerChecker {
 		assertThrowsAny(() -> assertArrayEquals(floatsA, floatsC));
 		assertThrowsAny(() -> assertArrayEquals(floatsaB, floatsC));
 		assertThrowsAny(() -> assertArrayEquals(floatsaB, floatsD));
-		double[] doualbesA = new double[] {4, 5, 89 };
-		double[] doualbesB = new double[] {4, 5, 89 };
-		double[] douablesC = new double[] {4, 89 };
-		double[] douablesD = new double[] {4, 89 };
+		double[] doualbesA = new double[] { 4, 5, 89 };
+		double[] doualbesB = new double[] { 4, 5, 89 };
+		double[] douablesC = new double[] { 4, 89 };
+		double[] douablesD = new double[] { 4, 89 };
 		assertArrayEquals(doualbesA, doualbesA);
 		assertArrayEquals(doualbesB, doualbesB);
 		assertArrayEquals(douablesC, douablesC);
@@ -159,29 +145,21 @@ public class NotCheckerChecker {
 	
 	@Check()
 	public static void checkFail() {
-		System.out.println("    checkFail");
+		LogHandler.LOG.finer(() -> "    checkFail");
 		assertThrows(CheckerFailException.class, () -> fail((String) null));
 		assertThrows(CheckerFailException.class, () -> fail(""));
 		assertThrows(CheckerFailException.class, () -> fail("fail"));
 	}
 	
 	@End
-	public static void end1() {
-		System.out.println("  check ends");
-	}
+	public static void end1() { LogHandler.LOG.finer(() -> "  check ends"); }
 	
 	@End(onlyOnce = true)
-	public static void end2() {
-		System.out.println("finalization");
-	}
+	public static void end2() { LogHandler.LOG.finer(() -> "finalization"); }
 	
 	@End
-	public static void end3() {
-		System.out.println("  other check ends");
-	}
+	public static void end3() { LogHandler.LOG.finer(() -> "  other check ends"); }
 	
-	public static void nothing() {
-		System.out.println("also not called");
-	}
+	public static void nothing() { LogHandler.LOG.finer(() -> "also not called"); }
 	
 }

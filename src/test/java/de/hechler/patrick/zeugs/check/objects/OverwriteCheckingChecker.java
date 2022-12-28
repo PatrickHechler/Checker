@@ -9,7 +9,9 @@ import java.lang.reflect.Method;
 import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 
-@CheckClass public class OverwriteCheckingChecker extends Checker {
+@SuppressWarnings("static-method")
+@CheckClass
+public class OverwriteCheckingChecker extends Checker {
 	
 	@Check
 	private void doCheck() throws NoSuchMethodException, SecurityException {
@@ -33,13 +35,11 @@ import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 	static class SubChecker extends SuperChecker {
 		
 		@Check
-		private void overwrittenFormerPrivateBadCheck() {
-		}
+		private void overwrittenFormerPrivateBadCheck() {}
 		
 		@Check
 		@Override
-		public void overwrittenFormerPublicBadCheck() {
-		}
+		public void overwrittenFormerPublicBadCheck() {}
 		
 	}
 	
@@ -47,18 +47,13 @@ import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 	static class SuperChecker extends Checker {
 		
 		@Check
-		private void goodCheck() {
-		}
+		private void goodCheck() {}
 		
 		@Check
-		private void overwrittenFormerPrivateBadCheck() {
-			fail();
-		}
+		private void overwrittenFormerPrivateBadCheck() { fail(); }
 		
 		@Check
-		public void overwrittenFormerPublicBadCheck() {
-			fail();
-		}
+		public void overwrittenFormerPublicBadCheck() { fail(); }
 		
 	}
 	

@@ -20,7 +20,7 @@ public class AssertionsChecker {
 	public void ckeckAssert() {
 		CheckResult r = new SubAssertionChecker().get();
 		assertFalse(r.wentExpected("badAssert"));
-		Result err = r.getResult("badAssert");
+		Result err = r.getResult("badAssert").values().stream().findAny().get().get(0).valB();
 		assertNotNull(err);
 		assertTrue(err.badResult());
 		assertExactClass(AssertionError.class, err.getErr());
