@@ -20,6 +20,7 @@ import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ParamInfo;
 import de.hechler.patrick.zeugs.check.anotations.ParamParam;
 import de.hechler.patrick.zeugs.check.interfaces.TwoVals;
+import de.hechler.patrick.zeugs.check.objects.ArrayIterator;
 import de.hechler.patrick.zeugs.check.objects.TwoValues;
 
 /**
@@ -32,10 +33,30 @@ public class ParamCreaterHelp {
 	
 	private ParamCreaterHelp() {}
 	
+	public static final String LINES_OF_INFO = "linesOfInfo";
+	
+	public static Iterable<String> linesOfInfo(@ParamParam Parameter param) throws IOException {
+		ParamInfo info  = info(param);
+		String    value = info.value();
+		return () -> value.lines().iterator();
+	}
+	
+	public static final String SPLIT_COMMA_OF_INFO = "splitCommaOfInfo";
+	
+	public static Iterable<String> splitCommaOfInfo(@ParamParam Parameter param) throws IOException {
+		ParamInfo info  = info(param);
+		String[]  array = info.value().split(",");
+		return () -> new ArrayIterator<>(array);
+	}
+	
+	public static final String LINES_OF_FILE = "linesOfFile";
+	
 	public static Iterable<String> linesOfFile(@ParamParam Parameter param) throws IOException {
 		Path path = pathOfInfo(param);
 		return Files.readAllLines(path);
 	}
+	
+	public static final String LINES_OF_RESOURCE = "linesOfResource";
 	
 	public static Iterable<String> linesOfResource(@ParamParam Parameter param) throws IOException {
 		URL          res    = resourceOfInfo(param);
@@ -48,12 +69,16 @@ public class ParamCreaterHelp {
 		return result;
 	}
 	
+	public static final String ENTRIES_OF_PROPERTY_FILE = "entriesOfPropertyFile";
+	
 	public static Iterable<TwoVals<String, String>> entriesOfPropertyFile(@ParamParam Parameter param) throws IOException {
 		Path path = pathOfInfo(param);
 		try (Reader reader = Files.newBufferedReader(path)) {
 			return readPropEntries(reader);
 		}
 	}
+	
+	public static final String ENTRIES_OF_PROPERTY_RESOURCE = "entriesOfPropertyResource";
 	
 	public static Iterable<TwoVals<String, String>> entriesOfPropertyResource(@ParamParam Parameter param) throws IOException {
 		URL url = resourceOfInfo(param);
@@ -71,17 +96,21 @@ public class ParamCreaterHelp {
 	}
 	
 	private static Path pathOfInfo(Parameter param) throws AssertionError {
-		ParamInfo info = param.getAnnotation(ParamInfo.class);
-		if (info == null) { throw new AssertionError("info is null (" + param + ')'); }
+		ParamInfo info = info(param);
 		return Paths.get(info.value());
 	}
 	
 	private static URL resourceOfInfo(Parameter param) throws AssertionError, NoSuchFileException {
-		ParamInfo info = param.getAnnotation(ParamInfo.class);
-		if (info == null) { throw new AssertionError("info is null (" + param + ')'); }
-		URL res = param.getDeclaringExecutable().getDeclaringClass().getResource(info.value());
+		ParamInfo info = info(param);
+		URL       res  = param.getDeclaringExecutable().getDeclaringClass().getResource(info.value());
 		if (res == null) { throw new NoSuchFileException("resource '" + info.value() + "' not found"); }
 		return res;
+	}
+	
+	private static ParamInfo info(Parameter param) throws AssertionError {
+		ParamInfo info = param.getAnnotation(ParamInfo.class);
+		if (info == null) { throw new AssertionError("info is null (" + param + ')'); }
+		return info;
 	}
 	
 }

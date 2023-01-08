@@ -10,8 +10,8 @@ import java.util.logging.Logger;
 
 public class LogHandler extends Handler {
 	
-	private static final String LOG_LEVEL_PROP   = "de.hechler.patrick.check.log.level";
-	private static final String LOG_HANDLER_PROP = "de.hechler.patrick.check.log.handler";
+	private static final String LOG_LEVEL_PROP   = Checker.LOG_LEVEL_PROP;
+	private static final String LOG_HANDLER_PROP = Checker.LOG_HANDLER_PROP;
 	
 	/**
 	 * this logger is used by the Checker module for logging
@@ -29,7 +29,10 @@ public class LogHandler extends Handler {
 		case "FINER" -> LOG.setLevel(Level.FINER);
 		case "FINEST" -> LOG.setLevel(Level.FINEST);
 		case "ALL" -> LOG.setLevel(Level.ALL);
-		default -> LOG.setLevel(defLevel());
+		default -> {
+			LOG.warning(() -> "log level property is invalid '" + System.getProperty(LOG_LEVEL_PROP) + "' (use 'de.hechler.patrick.check.log=<VALUE>')");
+			LOG.setLevel(Level.ALL);
+		}
 		}
 		switch (System.getProperty(LOG_HANDLER_PROP, "LogHandler")) {
 		case "default":
@@ -47,11 +50,6 @@ public class LogHandler extends Handler {
 				LOG.warning(() -> "could not load logger handler '" + System.getProperty(LOG_HANDLER_PROP) + "' " + e);
 			}
 		}
-	}
-	
-	private static Level defLevel() {
-		LOG.warning(() -> "log level property is invalid '" + System.getProperty(LOG_LEVEL_PROP) + "' (use 'de.hechler.patrick.check.log=<VALUE>')");
-		return Level.ALL;
 	}
 	
 	private final SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");

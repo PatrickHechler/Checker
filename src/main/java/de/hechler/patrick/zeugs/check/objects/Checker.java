@@ -23,6 +23,7 @@ import de.hechler.patrick.zeugs.check.anotations.Check;
 import de.hechler.patrick.zeugs.check.anotations.CheckClass;
 import de.hechler.patrick.zeugs.check.anotations.End;
 import de.hechler.patrick.zeugs.check.anotations.MethodParam;
+import de.hechler.patrick.zeugs.check.anotations.MethodParamsParam;
 import de.hechler.patrick.zeugs.check.anotations.ParamCreater;
 import de.hechler.patrick.zeugs.check.anotations.ParamParam;
 import de.hechler.patrick.zeugs.check.anotations.ResultParam;
@@ -52,6 +53,9 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 	private static final String   EXPORTER_NULL_PNTR_MSG = "exporter is null";
 	
 	private static final Map<Module, Consumer<String>> moduleExporters = new HashMap<>();
+	
+	public static final String LOG_LEVEL_PROP   = "de.hechler.patrick.check.log.level";
+	public static final String LOG_HANDLER_PROP = "de.hechler.patrick.check.log.handler";
 	
 	static {
 		Checker.class.getClassLoader().setDefaultAssertionStatus(true);
@@ -119,7 +123,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 		if (exporter == null) { throw new NullPointerException(EXPORTER_NULL_PNTR_MSG); }
 		synchronized (moduleExporters) {
 			moduleExporters.merge(module, exporter, (a, b) -> {
-				LOG.config(() -> "register multiple exporters for the same module (" + a.getClass().getModule() + ")");
+				LOG.config(() -> "register multiple exporters for the same module (" + a.getClass().getModule() + ')');
 				return pkg -> {
 					a.accept(pkg);
 					b.accept(pkg);
@@ -317,13 +321,14 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 		return result;
 	}
 	
-	private static Iterable<? extends Object> getParam(Object invoker, Supplier<?> checked, Method notRun, Method willRun, Parameter notParam,
-			Parameter param, Class<?> cls) throws AssertionError, ClassCastException {
-		ParamCreater pc        = param.getAnnotation(ParamCreater.class);
-		MethodParam  mp        = param.getAnnotation(MethodParam.class);
-		ResultParam  rp        = param.getAnnotation(ResultParam.class);
-		ParamParam   pp        = param.getAnnotation(ParamParam.class);
-		Class<?>     paramType = param.getType();
+	private static Iterable<? extends Object> getParam(Object invoker, Supplier<?> checked, Method notRun, Object[] notParams, Method willRun,
+			Parameter notParam, Parameter param, Class<?> cls) throws AssertionError, ClassCastException {
+		ParamCreater      pc        = param.getAnnotation(ParamCreater.class);
+		MethodParam       mp        = param.getAnnotation(MethodParam.class);
+		MethodParamsParam mpp       = param.getAnnotation(MethodParamsParam.class);
+		ResultParam       rp        = param.getAnnotation(ResultParam.class);
+		ParamParam        pp        = param.getAnnotation(ParamParam.class);
+		Class<?>          paramType = param.getType();
 		if (pc != null) {
 			String method = pc.method();
 			Method met;
@@ -342,7 +347,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 				Parameter[] params = met.getParameters();
 				ps = new Object[params.length];
 				for (int i = 0; i < ps.length; i++) {
-					ps[i] = getSingleParam(invoker, null, willRun, met, param, params[i], cls);
+					ps[i] = getSingleParam(invoker, null, willRun, null, met, param, params[i], cls);
 				}
 			}
 			Result r = run(met, invoker, met, ps);
@@ -372,6 +377,9 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			return () -> iter;
 		} else if (mp != null) {
 			Iterator<Object> iter = new ElementIterator<>(paramType.cast(notRun));
+			return () -> iter;
+		} else if (mpp != null) {
+			Iterator<Object> iter = new ElementIterator<>(paramType.cast(notParams));
 			return () -> iter;
 		} else if (pp != null) {
 			Iterator<Object> iter = new ElementIterator<>(paramType.cast(notParam));
@@ -455,7 +463,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			Start s = m.getAnnotation(Start.class);
 			if (s != null && !s.disabled()) {
 				if (s.onlyOnce()) {
-					this.init.add(() -> executeMethod(null, null, m));
+					this.init.add(() -> executeMethod(null, null, null, m));
 				} else {
 					this.start.add(m);
 				}
@@ -463,7 +471,7 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			End e = m.getAnnotation(End.class);
 			if (e != null && !e.disabled()) {
 				if (e.onlyOnce()) {
-					this.finalize.add(sup -> executeMethod(null, sup, m));
+					this.finalize.add(sup -> executeMethod(null, null, sup, m));
 				} else {
 					this.end.add(m);
 				}
@@ -472,17 +480,18 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			if (c != null && !c.disabled()) {
 				this.check.add(resultsMap -> {
 					if (m.getParameterCount() == 0) {
-						executeStart(m);
+						executeStart(m, EMPTY_ARR);
 						Result r = run(m, instance, m, EMPTY_ARR);
-						executeEnd(m, r);
+						executeEnd(m, EMPTY_ARR, r);
 						resultsMap.put(new TwoValues<>(m, EMPTY_ARR), r);
 					} else {
-						for (Iterator<Object[]> iter = generateBigIter(m, null, null, null); iter.hasNext();) {
-							executeStart(m);
+						for (Iterator<Object[]> iter = generateBigIter(m, null, null, null, null); iter.hasNext();) {
 							Object[] objs = iter.next();
-							Result   r    = run(m, instance, null, objs);
-							executeEnd(m, r);
-							resultsMap.put(new TwoValues<>(m, objs), r);
+							if (objs == null) { throw new AssertionError(); }
+							executeStart(m, objs);
+							Result r = run(m, instance, null, objs);
+							executeEnd(m, objs, r);
+							resultsMap.put(new TwoValues<>(m, objs.clone()), r);
 						}
 					}
 				});
@@ -490,20 +499,19 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 		}
 	}
 	
-	private void executeEnd(Method m, Result r) throws AssertionError {
+	private void executeEnd(Method m, Object[] notParams, Result r) throws AssertionError {
 		for (Method em : this.end) {
-			executeMethod(m, () -> r, em);
+			executeMethod(m, notParams, () -> r, em);
 		}
 	}
 	
-	private void executeStart(Method m) throws AssertionError {
+	private void executeStart(Method m, Object[] notParams) throws AssertionError {
 		for (Method sm : this.start) {
-			executeMethod(m, null, sm);
 			if (m.getParameterCount() == 0) {
 				Result sr = run(m, instance, null, EMPTY_ARR);
 				if (sr.badResult()) { throw new AssertionError(sr); }
 			} else {
-				for (Iterator<Object[]> startIter = generateBigIter(sm, null, m, null); startIter.hasNext();) {
+				for (Iterator<Object[]> startIter = generateBigIter(sm, null, m, notParams, null); startIter.hasNext();) {
 					Object[] startObjs = startIter.next();
 					Result   sr        = run(sm, instance, null, startObjs);
 					if (sr.badResult()) { throw new AssertionError(sr); }
@@ -512,12 +520,12 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 		}
 	}
 	
-	private void executeMethod(Method m, Supplier<?> r, Method exeMet) throws AssertionError {
+	private void executeMethod(Method m, Object[] notParams, Supplier<?> r, Method exeMet) throws AssertionError {
 		if (exeMet.getParameterCount() == 0) {
 			Result er = run(exeMet, instance, m == null ? exeMet : m, EMPTY_ARR);
 			if (er.badResult()) { throw new AssertionError(er); }
 		} else {
-			for (Iterator<Object[]> endIter = generateBigIter(exeMet, r, m, null); endIter.hasNext();) {
+			for (Iterator<Object[]> endIter = generateBigIter(exeMet, r, m, notParams, null); endIter.hasNext();) {
 				Object[] endObjs = endIter.next();
 				Result   er      = run(exeMet, instance, m == null ? exeMet : m, endObjs);
 				if (er.badResult()) { throw new AssertionError(er); }
@@ -525,11 +533,12 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 		}
 	}
 	
-	private Iterator<Object[]> generateBigIter(Method m, Supplier<?> sup, Method notRun, Parameter notParam) throws AssertionError {
+	private Iterator<Object[]> generateBigIter(Method m, Supplier<?> sup, Method notRun, Object[] notParams, Parameter notParam)
+			throws AssertionError {
 		Parameter[]   params = m.getParameters();
 		Iterable<?>[] ps     = new Iterable<?>[params.length];
 		for (int i = 0; i < params.length; i++) {
-			ps[i] = getParam(instance, sup, notRun, m, notParam, params[i], m.getDeclaringClass());
+			ps[i] = getParam(instance, sup, notRun, notParams, m, notParam, params[i], m.getDeclaringClass());
 		}
 		return new BigIterator<>(Object.class, ps);
 	}
@@ -630,16 +639,16 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 			i++;
 		}
 		for (; i < params.length; i++) {
-			ps[i] = getSingleParam(null, null, null, null, null, params[i], clas);
+			ps[i] = getSingleParam(null, null, null, null, null, null, params[i], clas);
 		}
 		setAccessible(c);
 		Object instance = c.newInstance(ps);
 		return clas.cast(instance);
 	}
 	
-	private static Object getSingleParam(Object invoker, Supplier<?> checked, Method notRun, Method willRun, Parameter notParam, Parameter param,
-			Class<?> cls) {
-		Iterator<?> iter = getParam(invoker, checked, notRun, willRun, notParam, param, cls).iterator();
+	private static Object getSingleParam(Object invoker, Supplier<?> checked, Method notRun, Object[] notParams, Method willRun, Parameter notParam,
+			Parameter param, Class<?> cls) {
+		Iterator<?> iter = getParam(invoker, checked, notRun, notParams, willRun, notParam, param, cls).iterator();
 		if (!iter.hasNext()) { throw new AssertionError("iterator has no element (tried to get single value of param: " + param + ")"); }
 		Object result = iter.next();
 		if (iter.hasNext()) { throw new AssertionError("iterator has too many elements (tried to get single value of param: " + param + ")"); }
