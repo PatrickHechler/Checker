@@ -507,8 +507,8 @@ public class Checker implements Runnable, Supplier<CheckResult> {
 	
 	private void executeStart(Method m, Object[] notParams) throws AssertionError {
 		for (Method sm : this.start) {
-			if (m.getParameterCount() == 0) {
-				Result sr = run(m, instance, null, EMPTY_ARR);
+			if (sm.getParameterCount() == 0) {
+				Result sr = run(sm, instance, null, EMPTY_ARR);
 				if (sr.badResult()) { throw new AssertionError(sr); }
 			} else {
 				for (Iterator<Object[]> startIter = generateBigIter(sm, null, m, notParams, null); startIter.hasNext();) {
