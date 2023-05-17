@@ -76,7 +76,6 @@ public class LogHandler extends Handler {
 	
 	public LogHandler(PrintStream out) { this.out = out; }
 	
-	
 	@Override
 	public void publish(LogRecord logRecord) {
 		synchronized (out) {
